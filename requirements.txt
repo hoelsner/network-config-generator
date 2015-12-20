@@ -1,0 +1,3 @@
+Flask==0.10.1
+Flask-SQLAlchemy==2.1
+Flask-Migrate==1.6.0
