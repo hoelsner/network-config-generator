@@ -1,4 +1,4 @@
 """
 functional test cases (based on selenium)
 """
-from tests.functional_tests.config_generator_test import NetworkConfigurationGeneratorUseCaseTest
+from tests.functional_tests.config_generator_test import *
