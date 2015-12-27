@@ -467,7 +467,12 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
         self.assertTrue(len(TemplateValueSet.query.all()) == 4)
 
         # test integrity check
-        failed_tvs = TemplateValueSet("values 2", ct1)
+        with self.assertRaises(IntegrityError):
+            failed_tvs = TemplateValueSet("values 2", ct1)
+        db.session.rollback()
+
+        failed_tvs = TemplateValueSet("values 2")
+        failed_tvs.config_template = ct1
         db.session.add(failed_tvs)
         with self.assertRaises(IntegrityError):
             db.session.commit()
@@ -482,10 +487,10 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
 
     def test_template_value_set_add_variable_and_lookup(self):
         # create test data
-        tvs1 = TemplateValueSet(name="tvs1")
-        tvs2 = TemplateValueSet(name="tvs2")
-        tvs3 = TemplateValueSet(name="tvs3")
-        tvs4 = TemplateValueSet(name="tvs4")
+        tvs1 = TemplateValueSet(hostname="tvs1")
+        tvs2 = TemplateValueSet(hostname="tvs2")
+        tvs3 = TemplateValueSet(hostname="tvs3")
+        tvs4 = TemplateValueSet(hostname="tvs4")
         db.session.add_all([tvs1, tvs2, tvs3, tvs4])
         db.session.commit()
 
@@ -536,8 +541,8 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
     def test_template_value_set_update_value(self):
         ct1 = ConfigTemplate(name="first script")
 
-        tvs1 = TemplateValueSet(name="tvs1", config_template=ct1)
-        tvs2 = TemplateValueSet(name="tvs2", config_template=ct1)
+        tvs1 = TemplateValueSet(hostname="tvs1", config_template=ct1)
+        tvs2 = TemplateValueSet(hostname="tvs2", config_template=ct1)
 
         db.session.add(ct1)
         db.session.add(tvs1)
@@ -569,8 +574,8 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
     def test_template_value_set_delete_cascade_option(self):
         ct1 = ConfigTemplate(name="Config Template")
 
-        tvs1 = TemplateValueSet(name="first script", config_template=ct1)
-        tvs2 = TemplateValueSet(name="second script", config_template=ct1)
+        tvs1 = TemplateValueSet(hostname="first script", config_template=ct1)
+        tvs2 = TemplateValueSet(hostname="second script", config_template=ct1)
 
         tvs1.update_variable_value("test 1", "value 1")
         tvs1.update_variable_value("test 2", "value 2")
@@ -593,6 +598,72 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
         self.assertTrue(len(ConfigTemplate.query.all()) == 1)
         self.assertTrue(len(TemplateValue.query.all()) == 0, len(TemplateValue.query.all()))
         self.assertTrue(len(TemplateValueSet.query.all()) == 0, len(TemplateValueSet.query.all()))
+
+    def test_template_value_set_copy_variable_function_during_creation(self):
+        ct = ConfigTemplate(name="my template", template_content="not a real config")
+        ct.update_template_variable("var 1")
+        ct.update_template_variable("var 2")
+        ct.update_template_variable("var 3")
+
+        db.session.add(ct)
+        db.session.commit()
+
+        # verify database content
+        self.assertTrue(len(ConfigTemplate.query.all()) == 1)
+        self.assertTrue(len(TemplateVariable.query.all()) == 3)
+
+        # create a new template value set and verify that template variables are copied to the TemplateValueSet object
+        tvs = TemplateValueSet(hostname="Value Set", config_template=ct)
+
+        self.assertTrue(len(TemplateValue.query.all()) == 4)
+
+        self.assertTrue(tvs.is_value_defined("hostname"))
+        self.assertTrue(tvs.is_value_defined("var 1"))
+        self.assertTrue(tvs.is_value_defined("var 2"))
+        self.assertTrue(tvs.is_value_defined("var 3"))
+        var_1_value = "My Value"
+        tvs.update_variable_value("var 1", var_1_value)
+
+        # call it again and verify that nothing has changed
+        tvs.copy_variables_from_config_template()
+
+        self.assertTrue(len(TemplateValue.query.all()) == 4)
+
+        self.assertTrue(tvs.is_value_defined("hostname"))
+        self.assertTrue(tvs.is_value_defined("var 1"))
+        self.assertTrue(tvs.is_value_defined("var 2"))
+        self.assertTrue(tvs.is_value_defined("var 3"))
+
+        # test that old values are preserved
+        self.assertEqual(tvs.get_template_value_by_name_as_string("var 1"), var_1_value)
+        self.assertEqual(tvs.get_template_value_by_name_as_string("hostname"), tvs.hostname)
+
+    def test_template_value_set_copy_variable_function_afterwards(self):
+        ct = ConfigTemplate(name="my template", template_content="not a real config")
+        ct.update_template_variable("var 1")
+        ct.update_template_variable("var 2")
+        ct.update_template_variable("var 3")
+
+        db.session.add(ct)
+        db.session.commit()
+
+        # verify database content
+        self.assertTrue(len(ConfigTemplate.query.all()) == 1)
+        self.assertTrue(len(TemplateVariable.query.all()) == 3)
+
+        # create a new template value set without link to a config template
+        tvs = TemplateValueSet(hostname="Value Set")
+
+        # define it afterwards (you need to trigger the copy process manually)
+        tvs.config_template = ct
+        tvs.copy_variables_from_config_template()
+
+        self.assertTrue(len(TemplateValue.query.all()) == 3)
+
+        self.assertTrue(tvs.is_value_defined("var 1"))
+        self.assertTrue(tvs.is_value_defined("var 2"))
+        self.assertTrue(tvs.is_value_defined("var 3"))
+        self.assertTrue(tvs.is_value_defined("hostname"))
 
 
 class TemplateValueDataModelTest(BaseFlaskTest):

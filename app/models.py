@@ -9,7 +9,11 @@ class TemplateValue(db.Model):
     __table_args__ = (db.UniqueConstraint('var_name', 'template_value_set_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
-    var_name = db.Column(db.String(256), index=True)
+    var_name = db.Column(
+        db.String(256),
+        index=True,
+        nullable=False
+    )
     value = db.Column(db.String(4096), index=True)
 
     template_value_set_id = db.Column(db.Integer, db.ForeignKey('template_value_set.id'))
@@ -27,19 +31,28 @@ class TemplateValue(db.Model):
 
 
 class TemplateValueSet(db.Model):
-    __table_args__ = (db.UniqueConstraint('name', 'config_template_id'),)
+    __table_args__ = (db.UniqueConstraint('hostname', 'config_template_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(256), index=True)
+    hostname = db.Column(
+        db.String(256),
+        index=True,
+        nullable=False
+    )
 
     config_template_id = db.Column(db.Integer, db.ForeignKey('config_template.id'))
     config_template = db.relationship('ConfigTemplate', backref=db.backref('template_value_sets',
                                                                            cascade="all, delete-orphan",
                                                                            lazy='dynamic'))
 
-    def __init__(self, name, config_template=None):
-        self.name = name
+    def __init__(self, hostname, config_template=None):
+        self.hostname = hostname
         self.config_template = config_template
+
+        # if a config template is specified during the initial creation of the object, all defined variables are copied
+        # to this value set
+        if config_template:
+            self.copy_variables_from_config_template()
 
     def __repr__(self):
         if not self.config_template:
@@ -47,7 +60,28 @@ class TemplateValueSet(db.Model):
         else:
             config_template_name = self.config_template.name
 
-        return '<TemplateValueSet %r (%s) in %s>' % (self.name, self.id, config_template_name)
+        return '<TemplateValueSet %r (%s) in %s>' % (self.hostname, self.id, config_template_name)
+
+    def copy_variables_from_config_template(self):
+        """
+        this function copies all variables from the parent configuration template object, that is defined in this class
+        :return:
+        """
+        if not self.config_template:
+            raise ValueError("Config Template not set within the template value set, copy variable names not possible")
+
+        parent_vars = self.config_template.variables.all()
+
+        # add hostname variable
+        self.update_variable_value("hostname",value=self.hostname)
+
+        for tpl_var in parent_vars:
+            if self.is_value_defined(tpl_var.var_name):
+                old_value = self.get_template_value_by_name_as_string(tpl_var.var_name)
+            else:
+                old_value = ""
+
+            self.update_variable_value(tpl_var.var_name, value=old_value)
 
     def get_template_value_names(self):
         """
@@ -62,17 +96,28 @@ class TemplateValueSet(db.Model):
 
     def get_template_value_by_name(self, var_name):
         """
-        get the TemplateValue by name within the configuration template
+        get the TemplateValue by name within the configuration template, otherwise an TemplateValueNotFoundException is
+        thrown
 
         :param var_name:
-        :return:
+        :return: the TemplateValue instance of teh variable
         """
         result = TemplateValue.query.filter_by(var_name=var_name, template_value_set=self).first()
         if not result:
-            raise TemplateValueNotFoundException("Value for '%s' not found in Template Value Set '%s'" % (var_name,
-                                                                                                          self.name))
+            raise TemplateValueNotFoundException("Value for '%s' not found in "
+                                                 "Template Value Set '%s'" % (var_name, self.hostname))
 
         return result
+
+    def get_template_value_by_name_as_string(self, var_name):
+        """
+        get the variable value as string for the given variable name, otherwise an TemplateValueNotFoundException is
+        thrown
+
+        :param var_name:
+        :return: string representation of the template value
+        """
+        return str(self.get_template_value_by_name(var_name).value)
 
     def update_variable_value(self, var_name, value=""):
         """
@@ -108,7 +153,11 @@ class TemplateVariable(db.Model):
     __table_args__ = (db.UniqueConstraint('var_name', 'config_template_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
-    var_name = db.Column(db.String(256), index=True)
+    var_name = db.Column(
+        db.String(256),
+        index=True,
+        nullable=False
+    )
     description = db.Column(db.String(4096), index=True)
 
     config_template_id = db.Column(db.Integer, db.ForeignKey('config_template.id'))
@@ -129,7 +178,11 @@ class ConfigTemplate(db.Model):
     __table_args__ = (db.UniqueConstraint('name', 'project_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), index=True)
+    name = db.Column(
+        db.String(128),
+        index=True,
+        nullable=False
+    )
     template_content = db.Column(db.UnicodeText(), index=True)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
@@ -161,7 +214,7 @@ class ConfigTemplate(db.Model):
         query_result = self.template_value_sets.all()
         valid = True
         for obj in query_result:
-            if obj.name == template_value_set_name:
+            if obj.hostname == template_value_set_name:
                 valid = False
                 break
 
@@ -222,7 +275,12 @@ class ConfigTemplate(db.Model):
 
 class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), index=True, unique=True)
+    name = db.Column(
+        db.String(128),
+        index=True,
+        unique=True,
+        nullable=False
+    )
 
     def __init__(self, name):
         self.name = name
