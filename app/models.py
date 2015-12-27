@@ -1,15 +1,17 @@
 """
 data model for the application
 """
+from slugify import slugify
+
 from app import db
 from app.exception import TemplateVariableNotFoundException, TemplateValueNotFoundException
 
 
 class TemplateValue(db.Model):
-    __table_args__ = (db.UniqueConstraint('var_name', 'template_value_set_id'),)
+    __table_args__ = (db.UniqueConstraint('var_name_slug', 'template_value_set_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
-    var_name = db.Column(
+    var_name_slug = db.Column(
         db.String(256),
         index=True,
         nullable=False
@@ -20,6 +22,23 @@ class TemplateValue(db.Model):
     template_value_set = db.relationship('TemplateValueSet', backref=db.backref('values',
                                                                                 cascade="all, delete-orphan",
                                                                                 lazy='dynamic'))
+
+    @staticmethod
+    def convert_variable_name(string):
+        """
+        convert the given to a valid variable representation
+        :param string:
+        :return:
+        """
+        return slugify(string, separator="_")
+
+    @property
+    def var_name(self):
+        return self.var_name_slug
+
+    @var_name.setter
+    def var_name(self, value):
+        self.var_name_slug = self.convert_variable_name(value)
 
     def __init__(self, template_value_set, var_name, value=""):
         self.var_name = var_name
@@ -62,6 +81,15 @@ class TemplateValueSet(db.Model):
 
         return '<TemplateValueSet %r (%s) in %s>' % (self.hostname, self.id, config_template_name)
 
+    @staticmethod
+    def convert_variable_name(string):
+        """
+        convert the given to a valid variable representation
+        :param string:
+        :return:
+        """
+        return slugify(string, separator="_")
+
     def copy_variables_from_config_template(self):
         """
         this function copies all variables from the parent configuration template object, that is defined in this class
@@ -73,7 +101,7 @@ class TemplateValueSet(db.Model):
         parent_vars = self.config_template.variables.all()
 
         # add hostname variable
-        self.update_variable_value("hostname",value=self.hostname)
+        self.update_variable_value("hostname", value=self.hostname)
 
         for tpl_var in parent_vars:
             if self.is_value_defined(tpl_var.var_name):
@@ -99,10 +127,12 @@ class TemplateValueSet(db.Model):
         get the TemplateValue by name within the configuration template, otherwise an TemplateValueNotFoundException is
         thrown
 
+        The given var_name is unconditionally converted to a slug string representation, before the query occurs.
+
         :param var_name:
         :return: the TemplateValue instance of teh variable
         """
-        result = TemplateValue.query.filter_by(var_name=var_name, template_value_set=self).first()
+        result = TemplateValue.query.filter_by(var_name_slug=var_name, template_value_set=self).first()
         if not result:
             raise TemplateValueNotFoundException("Value for '%s' not found in "
                                                  "Template Value Set '%s'" % (var_name, self.hostname))
@@ -119,25 +149,34 @@ class TemplateValueSet(db.Model):
         """
         return str(self.get_template_value_by_name(var_name).value)
 
-    def update_variable_value(self, var_name, value=""):
+    def update_variable_value(self, var_name, value="", auto_convert_var_name=True):
         """
-        add or update a template value for the Template Value set
+        add or update a template value for the Template Value set. The var_name parameter is automatically converted to
+        a slug string.
 
         :param var_name:
         :param value:
+        :param auto_convert_var_name: enables or disables the automatic conversion of the variable names
         :return:
         """
+        # convert string
+        if auto_convert_var_name:
+            var_name = self.convert_variable_name(var_name)
+
         if var_name not in self.get_template_value_names():
-            # variable not found, create new one
+            # variable not found, create new one (automatic conversion is then enforced)
+            var_name = self.convert_variable_name(var_name)
             new_var = TemplateValue(self, var_name, value)
             db.session.add(new_var)
             db.session.commit()
 
         else:
             # update existing variable
-            tpl_var = TemplateValue.query.filter_by(var_name=var_name, template_value_set=self).first()
+            tpl_var = TemplateValue.query.filter_by(var_name_slug=var_name, template_value_set=self).first()
             tpl_var.value = value
             db.session.commit()
+
+        return var_name
 
     def is_value_defined(self, val_name):
         """
@@ -150,10 +189,10 @@ class TemplateValueSet(db.Model):
 
 
 class TemplateVariable(db.Model):
-    __table_args__ = (db.UniqueConstraint('var_name', 'config_template_id'),)
+    __table_args__ = (db.UniqueConstraint('var_name_slug', 'config_template_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
-    var_name = db.Column(
+    var_name_slug = db.Column(
         db.String(256),
         index=True,
         nullable=False
@@ -164,6 +203,14 @@ class TemplateVariable(db.Model):
     config_template = db.relationship('ConfigTemplate', backref=db.backref('variables',
                                                                            cascade="all, delete-orphan",
                                                                            lazy='dynamic'))
+
+    @property
+    def var_name(self):
+        return self.var_name_slug
+
+    @var_name.setter
+    def var_name(self, value):
+        self.var_name_slug = slugify(value, separator="_")
 
     def __init__(self, config_template, var_name, description=""):
         self.var_name = var_name
@@ -204,6 +251,15 @@ class ConfigTemplate(db.Model):
 
         return '<ConfigTemplate %r (%s) in %s>' % (self.name, self.id, project_name)
 
+    @staticmethod
+    def convert_variable_name(string):
+        """
+        convert the given to a valid variable representation
+        :param string:
+        :return:
+        """
+        return slugify(string, separator="_")
+
     def valid_template_value_set_name(self, template_value_set_name):
         """
         test if the given template value set name is valid within the Configuration Template
@@ -238,30 +294,38 @@ class ConfigTemplate(db.Model):
         :param var_name:
         :return:
         """
-        result = TemplateVariable.query.filter_by(var_name=var_name, config_template=self).first()
+        result = TemplateVariable.query.filter_by(var_name_slug=var_name, config_template=self).first()
         if not result:
             raise TemplateVariableNotFoundException("Variable '%s' not found in Template '%s'" % (var_name, self.name))
         return result
 
-    def update_template_variable(self, var_name, description=""):
+    def update_template_variable(self, var_name, description="", auto_convert_var_name=True):
         """
         add or update a template variable for the Config Template
 
         :param var_name:
         :param description:
-        :return:
+        :param auto_convert_var_name: enables or disables the automatic conversion of the variable names
+        :return: name of the variable that was updated (automatic conversion)
         """
+        # convert string
+        if auto_convert_var_name:
+            var_name = self.convert_variable_name(var_name)
+
         if var_name not in self.get_template_variable_names():
-            # variable not found, create new one
+            # variable not found, create new one (automatic conversion is then enforced)
+            var_name = self.convert_variable_name(var_name)
             new_var = TemplateVariable(self, var_name, description)
             db.session.add(new_var)
             db.session.commit()
 
         else:
             # update existing variable
-            tpl_var = TemplateVariable.query.filter_by(var_name=var_name, config_template=self).first()
+            tpl_var = TemplateVariable.query.filter_by(var_name_slug=var_name, config_template=self).first()
             tpl_var.description = description
             db.session.commit()
+
+        return var_name
 
     def is_variable_defined(self, var_name):
         """

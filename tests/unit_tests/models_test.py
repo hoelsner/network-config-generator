@@ -283,21 +283,21 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
         # retrieve variables
         self.assertTrue(len(ct1.variables.all()) == 2)
         self.assertTrue(len(ct2.variables.all()) == 1)
-        self.assertTrue(ct1.is_variable_defined("first variable"))
-        self.assertTrue(ct1.is_variable_defined("second variable"))
-        self.assertTrue(ct2.is_variable_defined("first variable"))
+        self.assertTrue(ct1.is_variable_defined("first_variable"))
+        self.assertTrue(ct1.is_variable_defined("second_variable"))
+        self.assertTrue(ct2.is_variable_defined("first_variable"))
 
-        ct1var1 = ct1.get_template_variable_by_name("first variable")
+        ct1var1 = ct1.get_template_variable_by_name("first_variable")
         self.assertTrue(type(ct1var1) is TemplateVariable)
         self.assertEqual(ct1var1.config_template, ct1)
         self.assertEqual(ct1var1.description, ct1var1_desc)
 
-        ct1var2 = ct1.get_template_variable_by_name("second variable")
+        ct1var2 = ct1.get_template_variable_by_name("second_variable")
         self.assertTrue(type(ct1var2) is TemplateVariable)
         self.assertEqual(ct1var2.config_template, ct1)
         self.assertEqual(ct1var2.description, ct1var2_desc)
 
-        ct2var1 = ct2.get_template_variable_by_name("first variable")
+        ct2var1 = ct2.get_template_variable_by_name("first_variable")
         self.assertTrue(type(ct2var1) is TemplateVariable)
         self.assertEqual(ct2var1.config_template, ct2)
         self.assertEqual(ct2var1.description, ct2var1_desc)
@@ -335,7 +335,7 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
         ct1var1_desc_mod = "modified description"
         ct1.update_template_variable("first variable", ct1var1_desc_mod)
 
-        ct1var1 = ct1.get_template_variable_by_name("first variable")
+        ct1var1 = ct1.get_template_variable_by_name("first_variable")
         self.assertNotEqual(ct1var1.description, ct1var1_desc)
         self.assertEqual(ct1var1.description, ct1var1_desc_mod)
 
@@ -391,6 +391,25 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
         self.assertFalse(ct1.valid_template_value_set_name(test_tvs_name))
         self.assertTrue(ct2.valid_template_value_set_name(test_tvs_name))
 
+    def test_variable_name_conversion(self):
+        ct = ConfigTemplate("My Template")
+
+        ct.update_template_variable("First Test")
+        self.assertTrue(ct.is_variable_defined("first_test"))
+
+        ct.update_template_variable("first_test")
+        self.assertTrue(len(ConfigTemplate.query.all()) == 1)
+        self.assertTrue(ct.is_variable_defined("first_test"))
+
+        variable_map = (
+            ("Value ", "value"),
+            ("the variable name", "the_variable_name"),
+            ("%&/__ASDF ", "asdf"),
+        )
+
+        for string, expected_result in variable_map:
+            self.assertEqual(ct.convert_variable_name(string), expected_result)
+
 
 class TemplateVariableDataModelTest(BaseFlaskTest):
 
@@ -414,7 +433,7 @@ class TemplateVariableDataModelTest(BaseFlaskTest):
         db.session.rollback()
 
         # get same variable and verify description
-        received_var2 = TemplateVariable.query.filter_by(var_name=var2_name, config_template=ct1).first()
+        received_var2 = TemplateVariable.query.filter_by(var_name_slug=var2_name, config_template=ct1).first()
 
         self.assertEqual(received_var2, var2)
 
@@ -515,21 +534,21 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
         # retrieve variables
         self.assertTrue(len(tvs1.values.all()) == 2)
         self.assertTrue(len(tvs2.values.all()) == 1)
-        self.assertTrue(tvs1.is_value_defined("first variable"))
-        self.assertTrue(tvs1.is_value_defined("second variable"))
-        self.assertTrue(tvs2.is_value_defined("first variable"))
+        self.assertTrue(tvs1.is_value_defined(tvs1.convert_variable_name("first variable")))
+        self.assertTrue(tvs1.is_value_defined(tvs1.convert_variable_name("second variable")))
+        self.assertTrue(tvs2.is_value_defined(tvs1.convert_variable_name("first variable")))
 
-        tvs1var1 = tvs1.get_template_value_by_name("first variable")
+        tvs1var1 = tvs1.get_template_value_by_name(tvs1.convert_variable_name("first variable"))
         self.assertTrue(type(tvs1var1) is TemplateValue)
         self.assertEqual(tvs1var1.template_value_set, tvs1)
         self.assertEqual(tvs1var1.value, tvs1var1_value)
 
-        tvs1var2 = tvs1.get_template_value_by_name("second variable")
+        tvs1var2 = tvs1.get_template_value_by_name(tvs1.convert_variable_name("second variable"))
         self.assertTrue(type(tvs1var2) is TemplateValue)
         self.assertEqual(tvs1var2.template_value_set, tvs1)
         self.assertEqual(tvs1var2.value, tvs1var2_value)
 
-        tvs2var1 = tvs2.get_template_value_by_name("first variable")
+        tvs2var1 = tvs2.get_template_value_by_name(tvs1.convert_variable_name("first variable"))
         self.assertTrue(type(tvs2var1) is TemplateValue)
         self.assertEqual(tvs2var1.template_value_set, tvs2)
         self.assertEqual(tvs2var1.value, tvs2var1_value)
@@ -560,14 +579,14 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
         tvs1.update_variable_value("second variable", "value for second tvs1 variable")
         tvs2.update_variable_value("first variable", "value for first tvs2 variable")
 
-        self.assertTrue(len(tvs1.values.all()) == 2)
-        self.assertTrue(len(tvs2.values.all()) == 1)
+        self.assertTrue(len(tvs1.values.all()) == 2+1)
+        self.assertTrue(len(tvs2.values.all()) == 1+1)
 
         # update value
         tvs1var1_value_mod = "modified description"
         tvs1.update_variable_value("first variable", tvs1var1_value_mod)
 
-        tvs1var1 = tvs1.get_template_value_by_name("first variable")
+        tvs1var1 = tvs1.get_template_value_by_name("first_variable")
         self.assertNotEqual(tvs1var1.value, tvs1var1_value)
         self.assertEqual(tvs1var1.value, tvs1var1_value_mod)
 
@@ -577,22 +596,22 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
         tvs1 = TemplateValueSet(hostname="first script", config_template=ct1)
         tvs2 = TemplateValueSet(hostname="second script", config_template=ct1)
 
-        tvs1.update_variable_value("test 1", "value 1")
-        tvs1.update_variable_value("test 2", "value 2")
-        tvs1.update_variable_value("test 3", "value 3")
-        tvs2.update_variable_value("other test 1", "other value 1")
-        tvs2.update_variable_value("other test 2", "other value 2")
-        tvs2.update_variable_value("other test 3", "other value 3")
+        self.assertEqual(tvs1.update_variable_value("test 1", "value 1"), "test_1")
+        self.assertEqual(tvs1.update_variable_value("test 2", "value 2"), "test_2")
+        self.assertEqual(tvs1.update_variable_value("test 3", "value 3"), "test_3")
+        self.assertEqual(tvs2.update_variable_value("other test 1", "other value 1"), "other_test_1")
+        self.assertEqual(tvs2.update_variable_value("other test 2", "other value 2"), "other_test_2")
+        self.assertEqual(tvs2.update_variable_value("other test 3", "other value 3"), "other_test_3")
 
         db.session.add_all([tvs1, tvs2, ct1])
         db.session.commit()
 
         # test cascade option when deleting objects
-        self.assertTrue(len(TemplateValue.query.all()) == 6, len(TemplateValue.query.all()))
+        self.assertTrue(len(TemplateValue.query.all()) == 6+2, len(TemplateValue.query.all()))
         self.assertTrue(len(TemplateValueSet.query.all()) == 2, len(TemplateValueSet.query.all()))
         db.session.delete(tvs1)
         self.assertTrue(len(ConfigTemplate.query.all()) == 1)
-        self.assertTrue(len(TemplateValue.query.all()) == 3, len(TemplateValue.query.all()))
+        self.assertTrue(len(TemplateValue.query.all()) == 4, len(TemplateValue.query.all()))
         self.assertTrue(len(TemplateValueSet.query.all()) == 1, len(TemplateValueSet.query.all()))
         db.session.delete(tvs2)
         self.assertTrue(len(ConfigTemplate.query.all()) == 1)
@@ -601,9 +620,9 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
 
     def test_template_value_set_copy_variable_function_during_creation(self):
         ct = ConfigTemplate(name="my template", template_content="not a real config")
-        ct.update_template_variable("var 1")
-        ct.update_template_variable("var 2")
-        ct.update_template_variable("var 3")
+        self.assertEqual(ct.update_template_variable("var 1"), "var_1")
+        self.assertEqual(ct.update_template_variable("var 2"), "var_2")
+        self.assertEqual(ct.update_template_variable("var 3"), "var_3")
 
         db.session.add(ct)
         db.session.commit()
@@ -618,11 +637,11 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
         self.assertTrue(len(TemplateValue.query.all()) == 4)
 
         self.assertTrue(tvs.is_value_defined("hostname"))
-        self.assertTrue(tvs.is_value_defined("var 1"))
-        self.assertTrue(tvs.is_value_defined("var 2"))
-        self.assertTrue(tvs.is_value_defined("var 3"))
+        self.assertTrue(tvs.is_value_defined("var_1"))
+        self.assertTrue(tvs.is_value_defined("var_2"))
+        self.assertTrue(tvs.is_value_defined("var_3"))
         var_1_value = "My Value"
-        tvs.update_variable_value("var 1", var_1_value)
+        tvs.update_variable_value("var_1", var_1_value)
 
         # call it again and verify that nothing has changed
         tvs.copy_variables_from_config_template()
@@ -630,12 +649,12 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
         self.assertTrue(len(TemplateValue.query.all()) == 4)
 
         self.assertTrue(tvs.is_value_defined("hostname"))
-        self.assertTrue(tvs.is_value_defined("var 1"))
-        self.assertTrue(tvs.is_value_defined("var 2"))
-        self.assertTrue(tvs.is_value_defined("var 3"))
+        self.assertTrue(tvs.is_value_defined("var_1"))
+        self.assertTrue(tvs.is_value_defined("var_2"))
+        self.assertTrue(tvs.is_value_defined("var_3"))
 
         # test that old values are preserved
-        self.assertEqual(tvs.get_template_value_by_name_as_string("var 1"), var_1_value)
+        self.assertEqual(tvs.get_template_value_by_name_as_string("var_1"), var_1_value)
         self.assertEqual(tvs.get_template_value_by_name_as_string("hostname"), tvs.hostname)
 
     def test_template_value_set_copy_variable_function_afterwards(self):
@@ -656,14 +675,33 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
 
         # define it afterwards (you need to trigger the copy process manually)
         tvs.config_template = ct
-        tvs.copy_variables_from_config_template()
+        tvs.copy_variables_from_config_template()   # this method will automatically create a 'hostname' variable value
 
-        self.assertTrue(len(TemplateValue.query.all()) == 3)
+        self.assertTrue(len(TemplateValue.query.all()) == 4)
 
-        self.assertTrue(tvs.is_value_defined("var 1"))
-        self.assertTrue(tvs.is_value_defined("var 2"))
-        self.assertTrue(tvs.is_value_defined("var 3"))
+        self.assertTrue(tvs.is_value_defined("var_1"))
+        self.assertTrue(tvs.is_value_defined("var_2"))
+        self.assertTrue(tvs.is_value_defined("var_3"))
         self.assertTrue(tvs.is_value_defined("hostname"))
+
+    def test_variable_name_conversion(self):
+        tvs = TemplateValueSet("My Template")
+
+        tvs.update_variable_value("First Test")
+        self.assertTrue(tvs.is_value_defined("first_test"))
+
+        tvs.update_variable_value("first_test")
+        self.assertTrue(len(TemplateValueSet.query.all()) == 1)
+        self.assertTrue(tvs.is_value_defined("first_test"))
+
+        variable_map = (
+            ("Value ", "value"),
+            ("the variable name", "the_variable_name"),
+            ("%&/__ASDF ", "asdf"),
+        )
+
+        for string, expected_result in variable_map:
+            self.assertEqual(tvs.convert_variable_name(string), expected_result)
 
 
 class TemplateValueDataModelTest(BaseFlaskTest):
@@ -688,6 +726,6 @@ class TemplateValueDataModelTest(BaseFlaskTest):
         db.session.rollback()
 
         # get same variable and verify description
-        received_var2 = TemplateValue.query.filter_by(var_name=var2_name, template_value_set=tvs1).first()
+        received_var2 = TemplateValue.query.filter_by(var_name_slug=var2_name, template_value_set=tvs1).first()
 
         self.assertEqual(received_var2, var2)
