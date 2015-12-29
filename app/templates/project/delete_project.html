@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Delete Project{% endblock %}
+
+{% block content %}
+    <h2>Project: {{ project.name }}</h2>
+    <p>
+        <a href="{{ url_for("view_all_projects") }}" id="_back">back</a>
+    </p>
+    <form action="" method="POST">
+        <p>Do you really want to delete the Project? All associated elements are also deleted.</p>
+        <input id="submit" type="submit" name="yes" value="yes" />
+    </form>
+{% endblock %}

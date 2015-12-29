@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}All Projects{% endblock %}
+
+{% block content %}
+    <h2>All Projects on this server</h2>
+    <p>
+        <a href="{{  url_for("home") }}" id="_back">back</a> |
+        <a href="{{  url_for("edit_project") }}" id="create_project">add a new Project</a>
+    </p>
+    {% if projects|length == 0 %}
+        <p>No Projects found in database. <a href="{{  url_for("edit_project") }}" id="create_project">Create your first Project now.</a></p>
+    {% else %}
+        <table>
+            <thead>
+                <tr>
+                    <th>name</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in projects %}
+                <tr>
+                   <td>
+                       <a href="{{ url_for("view_project", project_id=p.id) }}" id="view_project_{{ p.id }}">{{ p.name }}</a>
+                   </td>
+                   <td>
+                       <a href="{{ url_for("edit_project", project_id=p.id) }}" id="edit_project_{{ p.id }}">edit</a> |
+                       <a href="{{ url_for("delete_project", project_id=p.id) }}" id="delete_project_{{ p.id }}">delete</a>
+                   </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}

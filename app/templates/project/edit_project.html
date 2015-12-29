@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Edit Project{% endblock %}
+
+{% block content %}
+    {% if project %}
+        <h2>Edit Project: {{ project.name }}</h2>
+        <p>
+            <a href="{{ url_for("view_project", project_id=project.id) }}" id="_back">back</a>
+        </p>
+    {% else %}
+        <h2>Add a new Project</h2>
+        <p>
+            <a href="{{ url_for("view_all_projects") }}" id="_back">back</a>
+        </p>
+    {% endif %}
+
+    <form method="POST" action="">
+        {{ form.csrf_token }}
+
+        {% if form.name.errors %}
+            <ul class="errors">{% for error in form.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div>{{ form.name.label }}: {{ form.name()|safe }}</div>
+
+        <input id="submit" type="submit" value="save">
+    </form>
+{% endblock %}

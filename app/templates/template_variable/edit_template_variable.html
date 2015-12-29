@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Edit Template Variable{% endblock %}
+
+{% block content %}
+    <h2>Edit Template Variable: {{ template_variable.var_name }}</h2>
+    <p>
+        <a href="{{ url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}" id="_back">back</a>
+    </p>
+
+    <p>Please note that the change of a variable affects only the Template Value Sets, not the original content of the template.</p>
+
+    <form method="POST" action="">
+        {{ form.csrf_token }}
+
+        {% if form.var_name_slug.errors %}
+            <ul class="errors">{% for error in form.var_name_slug.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div>{{ form.var_name_slug.label }}: {{ form.var_name_slug()|safe }}</div>
+
+        {% if form.description.errors %}
+            <ul class="errors">{% for error in form.description.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div>{{ form.description.label }}: {{ form.description()|safe }}</div>
+
+        <input id="submit" type="submit" value="save">
+    </form>
+{% endblock %}

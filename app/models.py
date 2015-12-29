@@ -1,5 +1,5 @@
 """
-data model for the application
+SQLAlchemy data model for the web service
 """
 from slugify import slugify
 
@@ -8,6 +8,13 @@ from app.exception import TemplateVariableNotFoundException, TemplateValueNotFou
 
 
 class TemplateValue(db.Model):
+    """
+    TemplateValue
+    =============
+
+    The template value definition is used to associate a value to a variable within a Template Value Set.
+
+    """
     __table_args__ = (db.UniqueConstraint('var_name_slug', 'template_value_set_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
@@ -18,15 +25,15 @@ class TemplateValue(db.Model):
     )
     value = db.Column(db.String(4096), index=True)
 
-    template_value_set_id = db.Column(db.Integer, db.ForeignKey('template_value_set.id'))
+    template_value_set_id = db.Column(db.Integer, db.ForeignKey('template_value_set.id'), nullable=False)
     template_value_set = db.relationship('TemplateValueSet', backref=db.backref('values',
                                                                                 cascade="all, delete-orphan",
                                                                                 lazy='dynamic'))
 
     @staticmethod
     def convert_variable_name(string):
-        """
-        convert the given to a valid variable representation
+        """convert the given string to a valid variable name (creates a slug with "_"-spaces)
+
         :param string:
         :return:
         """
@@ -50,6 +57,13 @@ class TemplateValue(db.Model):
 
 
 class TemplateValueSet(db.Model):
+    """
+    TemplateValueSet
+    ================
+
+    The Template Value Set is used to store a set of variables for a Config Template.
+
+    """
     __table_args__ = (db.UniqueConstraint('hostname', 'config_template_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
@@ -59,7 +73,7 @@ class TemplateValueSet(db.Model):
         nullable=False
     )
 
-    config_template_id = db.Column(db.Integer, db.ForeignKey('config_template.id'))
+    config_template_id = db.Column(db.Integer, db.ForeignKey('config_template.id'), nullable=False)
     config_template = db.relationship('ConfigTemplate', backref=db.backref('template_value_sets',
                                                                            cascade="all, delete-orphan",
                                                                            lazy='dynamic'))
@@ -83,16 +97,16 @@ class TemplateValueSet(db.Model):
 
     @staticmethod
     def convert_variable_name(string):
-        """
-        convert the given to a valid variable representation
+        """convert the given string to a valid variable name
+
         :param string:
         :return:
         """
         return slugify(string, separator="_")
 
     def copy_variables_from_config_template(self):
-        """
-        this function copies all variables from the parent configuration template object, that is defined in this class
+        """this function copies all variables from the associated configuration template object
+
         :return:
         """
         if not self.config_template:
@@ -112,10 +126,9 @@ class TemplateValueSet(db.Model):
             self.update_variable_value(tpl_var.var_name, value=old_value)
 
     def get_template_value_names(self):
-        """
-        get all template variable names of the Template Value Set
+        """get all template variable names of the Template Value Set
 
-        :return:
+        :return: a list of strings that contains all variable names
         """
         result = []
         for obj in self.values.all():
@@ -123,14 +136,13 @@ class TemplateValueSet(db.Model):
         return result
 
     def get_template_value_by_name(self, var_name):
-        """
-        get the TemplateValue by name within the configuration template, otherwise an TemplateValueNotFoundException is
+        """get the Template Value by name within the Config Template, otherwise an TemplateValueNotFoundException is
         thrown
 
         The given var_name is unconditionally converted to a slug string representation, before the query occurs.
 
-        :param var_name:
-        :return: the TemplateValue instance of teh variable
+        :param var_name: a variable name (always converted to a valid variable name)
+        :return: the TemplateValue instance of the variable
         """
         result = TemplateValue.query.filter_by(var_name_slug=var_name, template_value_set=self).first()
         if not result:
@@ -140,9 +152,9 @@ class TemplateValueSet(db.Model):
         return result
 
     def get_template_value_by_name_as_string(self, var_name):
-        """
-        get the variable value as string for the given variable name, otherwise an TemplateValueNotFoundException is
-        thrown
+        """get the variable value as string for the given variable name.
+
+        If the variable_name was not found within the values, a TemplateValueNotFoundException is thrown
 
         :param var_name:
         :return: string representation of the template value
@@ -150,9 +162,8 @@ class TemplateValueSet(db.Model):
         return str(self.get_template_value_by_name(var_name).value)
 
     def update_variable_value(self, var_name, value="", auto_convert_var_name=True):
-        """
-        add or update a template value for the Template Value set. The var_name parameter is automatically converted to
-        a slug string.
+        """add or update a Template Variable for the Template Value set. The var_name parameter is automatically
+        converted to a slug string.
 
         :param var_name:
         :param value:
@@ -179,16 +190,30 @@ class TemplateValueSet(db.Model):
         return var_name
 
     def is_value_defined(self, val_name):
-        """
-        checks if the given variable is defined on the Template Value Set
+        """checks if the given template value is defined on the Template Value Set
 
         :param val_name:
         :return:
         """
         return val_name in self.get_template_value_names()
 
+    def get_template_variables(self):
+        """create a sorted list of the Template Values within this Template Value Set
+
+        :return:
+        """
+        return self.values.order_by(TemplateValue.var_name_slug).all()
+
 
 class TemplateVariable(db.Model):
+    """
+    TemplateVariable
+    ================
+
+    The template variable is used to annotate variables that are used within a Config Template. The major actions are
+    triggered by the ConfigTemplate class.
+
+    """
     __table_args__ = (db.UniqueConstraint('var_name_slug', 'config_template_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
@@ -199,7 +224,7 @@ class TemplateVariable(db.Model):
     )
     description = db.Column(db.String(4096), index=True)
 
-    config_template_id = db.Column(db.Integer, db.ForeignKey('config_template.id'))
+    config_template_id = db.Column(db.Integer, db.ForeignKey('config_template.id'), nullable=False)
     config_template = db.relationship('ConfigTemplate', backref=db.backref('variables',
                                                                            cascade="all, delete-orphan",
                                                                            lazy='dynamic'))
@@ -222,6 +247,14 @@ class TemplateVariable(db.Model):
 
 
 class ConfigTemplate(db.Model):
+    """
+    ConfigTemplate
+    ==============
+
+    The configuration template, that defines the content for the configuration generation process. It works with
+    TemplateVariable objects, that stores and annotates the variables used within this template.
+
+    """
     __table_args__ = (db.UniqueConstraint('name', 'project_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
@@ -232,7 +265,7 @@ class ConfigTemplate(db.Model):
     )
     template_content = db.Column(db.UnicodeText(), index=True)
 
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
     project = db.relationship('Project', backref=db.backref('configtemplates',
                                                             cascade="all, delete-orphan",
                                                             lazy='dynamic'))
@@ -253,16 +286,36 @@ class ConfigTemplate(db.Model):
 
     @staticmethod
     def convert_variable_name(string):
-        """
-        convert the given to a valid variable representation
+        """convert the given string to a valid variable name
+
         :param string:
         :return:
         """
         return slugify(string, separator="_")
 
-    def valid_template_value_set_name(self, template_value_set_name):
+    def rename_variable(self, old_name, new_name):
+        """rename the Template Variables within the Config Template and all associated Template Value Sets
+
+        :param old_name:
+        :param new_name:
+        :return:
         """
-        test if the given template value set name is valid within the Configuration Template
+        if old_name not in self.get_template_variable_names():
+            raise TemplateVariableNotFoundException("Variable %s not found in config template" % old_name)
+
+        var_obj = self.get_template_variable_by_name(old_name)
+        var_obj.var_name = new_name
+
+        # variable renamed, change associated value sets
+        for valueset in self.template_value_sets.all():
+            old_val = valueset.get_template_value_by_name_as_string(old_name)
+            # drop old variable from value set
+            db.session.delete(valueset.get_template_value_by_name(old_name))
+            # create new variables with the new name and the old value
+            valueset.update_variable_value(var_name=new_name, value=old_val)
+
+    def valid_template_value_set_name(self, template_value_set_name):
+        """test if the given Template Value Set name is valid within the Config Template
 
         :param template_value_set_name:
         :return: True if valid, otherwise false
@@ -277,8 +330,7 @@ class ConfigTemplate(db.Model):
         return valid
 
     def get_template_variable_names(self):
-        """
-        get all template variable names of the Config Template
+        """get all Template Variable Names of the Config Template
 
         :return:
         """
@@ -288,8 +340,7 @@ class ConfigTemplate(db.Model):
         return result
 
     def get_template_variable_by_name(self, var_name):
-        """
-        get a TemplateVariable by name within the configuration template
+        """get a Template Variable by the var_name_slug attribute within the Config Template
 
         :param var_name:
         :return:
@@ -300,8 +351,7 @@ class ConfigTemplate(db.Model):
         return result
 
     def update_template_variable(self, var_name, description="", auto_convert_var_name=True):
-        """
-        add or update a template variable for the Config Template
+        """add or update a Template Variable for the Config Template
 
         :param var_name:
         :param description:
@@ -328,8 +378,7 @@ class ConfigTemplate(db.Model):
         return var_name
 
     def is_variable_defined(self, var_name):
-        """
-        checks if the given variable is defined on the template
+        """checks if the given variable is defined on the Config Template
 
         :param var_name:
         :return:
@@ -338,6 +387,13 @@ class ConfigTemplate(db.Model):
 
 
 class Project(db.Model):
+    """
+    Project
+    =======
+
+    Root element of the data model to organize the data within the Web service.
+
+    """
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(
         db.String(128),
@@ -353,8 +409,7 @@ class Project(db.Model):
         return '<Project %r>' % self.name
 
     def valid_config_template_name(self, config_template_name):
-        """
-        test if the given config template name is valid within the project
+        """test if the given Config Template name is valid within this Project
 
         :param config_template_name:
         :return: True if valid, otherwise false

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}View Project{% endblock %}
+
+{% block content %}
+    <h2>Project: {{ project.name }}</h2>
+    <p>
+        <a href="{{  url_for("view_all_projects") }}" id="_back">back</a> |
+        <a href="{{  url_for("edit_config_template", project_id=project.id) }}" id="create_config_templates">add a Config Template</a>
+    </p>
+
+    {% if project.configtemplates.all()|length == 0 %}
+        <p>No Config Templates found in database.</p>
+    {% else %}
+        <p>The following Config Templates are defined within this Project.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Template Name</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for ct in project.configtemplates.all() %}
+                <tr>
+                   <td>
+                       <a href="{{ url_for("view_config_template", project_id=project.id, config_template_id=ct.id) }}" id="view_config_template_{{ ct.id }}">{{ ct.name }}</a>
+                   </td>
+                   <td>
+                       <a href="{{ url_for("edit_config_template", project_id=project.id, config_template_id=ct.id) }}" id="edit_config_template_{{ ct.id }}">edit</a> |
+                       <a href="{{ url_for("delete_config_template", project_id=project.id, config_template_id=ct.id) }}" id="delete_config_template_{{ ct.id }}">delete</a>
+                   </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+{% endblock %}

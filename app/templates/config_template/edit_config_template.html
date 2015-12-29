@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Edit Config Template{% endblock %}
+
+{% block content %}
+    {% if config_template %}
+        <h2>Edit the Config Template: {{ config_template.name }}</h2>
+        <p>
+            <a href="{{ url_for("view_config_template", project_id=project_id, config_template_id=config_template.id) }}" id="_back">back</a>
+        </p>
+    {% else %}
+        <h2>Add a new Config Template</h2>
+        <p>
+            <a href="{{ url_for("view_project", project_id=project_id) }}" id="_back">back</a>
+        </p>
+    {% endif %}
+
+    <form method="POST" action="">
+        {{ form.csrf_token }}
+
+        {% if form.name.errors %}
+            <ul class="errors">{% for error in form.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div>{{ form.name.label }}: {{ form.name()|safe }}</div>
+
+        {% if form.template_content.errors %}
+            <ul class="errors">{% for error in form.template_content.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div>{{ form.template_content.label }}:<br> {{ form.template_content(rows=20,cols=80)|safe }}</div>
+
+        <input id="submit" type="submit" value="save">
+    </form>
+{% endblock %}

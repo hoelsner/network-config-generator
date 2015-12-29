@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Edit Template Value Set{% endblock %}
+
+{% block content %}
+    {% if template_value_set %}
+        <h2>Edit Template Value Set {{ template_value_set.hostname }}</h2>
+        <p>
+            <a href="{{ url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id)  }}" id="_back">back</a>
+        </p>
+    {% else %}
+        <h2>Add a new Template Value Set</h2>
+        <p>
+            <a href="{{ url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}" id="_back">back</a>
+        </p>
+    {% endif %}
+
+    <form method="POST" action="">
+        {{ form.csrf_token }}
+
+        {% if form.hostname.errors %}
+            <ul class="errors">{% for error in form.hostname.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div>{{ form.hostname.label }}: {{ form.hostname|safe }}</div>
+
+        {# The variables are only changed if the config template was already created #}
+        {% if template_value_set %}
+            <strong>The following variables are defined within the Template Variable Set.</strong>
+            {% if template_value_set.values.all()|length == 0 %}
+                <p>There are no variables defined within this Template Variable Set.</p>
+            {% else %}
+                {% for val in template_value_set.get_template_variables() %}
+                    {# the hostname is changed within the regular form #}
+                    {% if val.var_name == "hostname" %}
+                        <input id="edit_{{ val.var_name }}" name="edit_{{ val.var_name }}" value="{{ val.value|safe }}" type="hidden">
+                    {% else %}
+                        <div>
+                            <label for="edit_{{ val.var_name }}">{{ val.var_name }}</label>:
+                            <input id="edit_{{ val.var_name }}" name="edit_{{ val.var_name }}" value="{{ val.value|safe }}" type="text">
+                            <small>{{ config_template.get_template_variable_by_name(val.var_name).description }}</small>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+
+        <input id="submit" type="submit" value="save">
+    </form>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Delete Config Template{% endblock %}
+
+{% block content %}
+    <h2>Config Template: {{ config_template.name }}</h2>
+    <p>
+        <a href="{{ url_for("view_project", project_id=config_template.project.id) }}" id="_back">back</a>
+    </p>
+    <form action="" method="POST">
+        <p>Do you really want to delete the config template? All associated elements are also removed.</p>
+        <input id="submit" type="submit" name="yes" value="yes" />
+    </form>
+{% endblock %}
