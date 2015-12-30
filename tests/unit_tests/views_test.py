@@ -184,6 +184,12 @@ class ProjectViewTest(BaseFlaskTest):
         db.session.commit()
 
         # delete the element
+        response = self.client.get(url_for("delete_project", project_id=p.id), follow_redirects=True)
+        self.assert200(response)
+        self.assertTemplateUsed("project/delete_project.html")
+        delete_message = "Do you really want to delete the Project? All associated elements are also deleted."
+        self.assertIn(delete_message, response.data.decode("utf-8"))
+
         response = self.client.post(url_for("delete_project", project_id=p.id), follow_redirects=True)
         self.assert200(response)
         self.assertTemplateUsed("project/view_all_projects.html")
@@ -250,9 +256,11 @@ class ConfigTemplateViewTest(BaseFlaskTest):
         var_1_desc = "description 1"
         var_2_name = "variable_2"
         var_2_desc = "description 2"
+        template_content = "${ %s } ${ %s }" % (var_1_name, var_2_name)
 
         p = Project("My Project")
-        ct = ConfigTemplate("Template name", project=p)
+        ct = ConfigTemplate("Template name", project=p, template_content=template_content)
+
         ct.update_template_variable(var_1_name, var_1_desc)
         ct.update_template_variable(var_2_name, var_2_desc)
         db.session.add(p)
@@ -447,6 +455,19 @@ class ConfigTemplateViewTest(BaseFlaskTest):
         self.assertTrue(len(ConfigTemplate.query.all()) == 2)
 
         # delete the element
+        response = self.client.get(
+                url_for(
+                    "delete_config_template",
+                    project_id=ct1.project.id,
+                    config_template_id=ct1.id
+                ),
+                follow_redirects=True
+        )
+        self.assert200(response)
+        delete_message = "Do you really want to delete the config template? " \
+                         "All associated elements are also removed."
+        self.assertIn(delete_message, response.data.decode("utf-8"))
+
         response = self.client.post(
                 url_for(
                     "delete_config_template",
@@ -881,6 +902,19 @@ class TemplateValueSetViewTest(BaseFlaskTest):
         self.assertTrue(len(TemplateValueSet.query.all()) == 2)
 
         # delete the element
+        response = self.client.get(
+                url_for(
+                    "delete_template_value_set",
+                    config_template_id=ct.id,
+                    template_value_set_id=tvs1.id
+                )
+        )
+        self.assert200(response)
+        self.assertTemplateUsed("template_value_set/delete_template_value_set.html")
+        delete_message = "Do you really want to delete this Template Value Set? All associated " \
+                         "elements are also deleted."
+        self.assertIn(delete_message, response.data.decode("utf-8"))
+
         response = self.client.post(
                 url_for(
                     "delete_template_value_set",
@@ -913,3 +947,97 @@ class TemplateValueSetViewTest(BaseFlaskTest):
             )
         )
         self.assert404(response)
+
+
+class ConfigurationViewTest(BaseFlaskTest):
+
+    def test_show_valid_configuration(self):
+        """test configuration result
+
+        :return:
+        """
+        var_1_name = "variable_1"
+        var_1_desc = "description 1"
+        var_2_name = "variable_2"
+        var_2_desc = "description 2"
+        first_hostname = "hostname_A"
+        second_hostname = "hostname_B"
+        template_content = "!\n${hostname}\n!\n${ %s }\n${ %s }" % (var_1_name, var_2_name)
+        first_expected_result = "!\n%s\n!\n%s\n%s" % (first_hostname, "first value", "second value")
+        second_expected_result = "!\n%s\n!\n%s\n%s" % (second_hostname, "first value", "second value")
+
+        p = Project("My Project")
+        ct = ConfigTemplate("Template name", project=p, template_content=template_content)
+
+        ct.update_template_variable(var_1_name, var_1_desc)
+        ct.update_template_variable(var_2_name, var_2_desc)
+
+        tvs1 = TemplateValueSet(hostname=first_hostname, config_template=ct)
+        tvs1.update_variable_value(var_1_name, "first value")
+        tvs1.update_variable_value(var_2_name, "second value")
+        tvs2 = TemplateValueSet(hostname=second_hostname, config_template=ct)
+        tvs2.update_variable_value(var_1_name, "first value")
+        tvs2.update_variable_value(var_2_name, "second value")
+
+        db.session.add(p)
+        db.session.add(ct)
+        db.session.add(tvs1)
+        db.session.add(tvs2)
+        db.session.commit()
+
+        # get configuration and check results
+        response = self.client.get(url_for("view_config", config_template_id=ct.id, template_value_set_id=tvs1.id))
+        self.assert200(response)
+        self.assertIn(first_expected_result, response.data.decode("utf-8"))
+
+        response = self.client.get(url_for("view_config", config_template_id=ct.id, template_value_set_id=tvs2.id))
+        self.assert200(response)
+        self.assertIn(second_expected_result, response.data.decode("utf-8"))
+
+        # test download views
+        response = self.client.get(url_for("download_config", config_template_id=ct.id, template_value_set_id=tvs1.id))
+        self.assert200(response)
+        self.assertTrue(first_expected_result == response.data.decode("utf-8"))
+
+        response = self.client.get(url_for("download_config", config_template_id=ct.id, template_value_set_id=tvs2.id))
+        self.assert200(response)
+        self.assertTrue(second_expected_result == response.data.decode("utf-8"))
+
+    def test_download_all_configurations(self):
+        """test download of all configurations (only the creation of the ZIP archive, not the content itself)
+
+        :return:
+        """
+        var_1_name = "variable_1"
+        var_1_desc = "description 1"
+        var_2_name = "variable_2"
+        var_2_desc = "description 2"
+        first_hostname = "hostname_A"
+        second_hostname = "hostname_B"
+        template_content = "!\n${hostname}\n!\n${ %s }\n${ %s }" % (var_1_name, var_2_name)
+
+        p = Project("My Project")
+        ct = ConfigTemplate("Template name", project=p, template_content=template_content)
+
+        ct.update_template_variable(var_1_name, var_1_desc)
+        ct.update_template_variable(var_2_name, var_2_desc)
+
+        tvs1 = TemplateValueSet(hostname=first_hostname, config_template=ct)
+        tvs1.update_variable_value(var_1_name, "first value")
+        tvs1.update_variable_value(var_2_name, "second value")
+        tvs2 = TemplateValueSet(hostname=second_hostname, config_template=ct)
+        tvs2.update_variable_value(var_1_name, "first value")
+        tvs2.update_variable_value(var_2_name, "second value")
+
+        db.session.add(p)
+        db.session.add(ct)
+        db.session.add(tvs1)
+        db.session.add(tvs2)
+        db.session.commit()
+
+        response = self.client.get(
+            url_for("download_all_config_as_zip", project_id=ct.project.id, config_template_id=ct.id)
+        )
+        self.assert200(response)
+        # the content is validated within a functional test case
+

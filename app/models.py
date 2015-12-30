@@ -2,9 +2,9 @@
 SQLAlchemy data model for the web service
 """
 from slugify import slugify
-
 from app import db
 from app.exception import TemplateVariableNotFoundException, TemplateValueNotFoundException
+from app.utils import MakoConfigGenerator
 
 
 class TemplateValue(db.Model):
@@ -204,6 +204,18 @@ class TemplateValueSet(db.Model):
         """
         return self.values.order_by(TemplateValue.var_name_slug).all()
 
+    def get_configuration_result(self):
+        """generates the configuration based on the Config Template and the associated Template Value Set
+
+        :return:
+        """
+        dcg = MakoConfigGenerator(template_string=self.config_template.template_content)
+
+        for val in self.values:
+            dcg.set_variable_value(val.var_name, val.value)
+
+        return dcg.get_rendered_result()
+
 
 class TemplateVariable(db.Model):
     """
@@ -263,12 +275,27 @@ class ConfigTemplate(db.Model):
         index=True,
         nullable=False
     )
-    template_content = db.Column(db.UnicodeText(), index=True)
+    _template_content = db.Column(db.UnicodeText(), index=True)
 
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
     project = db.relationship('Project', backref=db.backref('configtemplates',
                                                             cascade="all, delete-orphan",
                                                             lazy='dynamic'))
+
+    @property
+    def template_content(self):
+        return self._template_content
+
+    @template_content.setter
+    def template_content(self, value):
+        # if the template content is changed, drop all associated Template Value Sets
+        if self._template_content != value:
+            for obj in self.template_value_sets.all():
+                TemplateValueSet.query.filter(TemplateValueSet.id == obj.id).delete()
+
+        self._template_content = value
+
+        self._create_variables_from_template_content()
 
     def __init__(self, name, project=None, template_content=""):
         self.name = name
@@ -292,6 +319,13 @@ class ConfigTemplate(db.Model):
         :return:
         """
         return slugify(string, separator="_")
+
+    def _create_variables_from_template_content(self):
+        dcg = MakoConfigGenerator(template_string=self.template_content)
+
+        # create new template variables on the Config Template
+        for var_name in dcg.template_variables:
+            self.update_template_variable(var_name)
 
     def rename_variable(self, old_name, new_name):
         """rename the Template Variables within the Config Template and all associated Template Value Sets

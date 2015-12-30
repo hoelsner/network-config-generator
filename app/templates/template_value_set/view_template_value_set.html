@@ -5,7 +5,8 @@
     <h2>Template Value Set: {{ template_value_set.hostname }}</h2>
     <p>
         <a href="{{  url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}" id="_back">back</a> |
-        <a href="{{  url_for("edit_template_value_set", config_template_id=config_template.id, template_value_set_id=template_value_set.id) }}" id="edit_template_value_set">edit this Template Value Set</a>
+        <a href="{{  url_for("edit_template_value_set", config_template_id=config_template.id, template_value_set_id=template_value_set.id) }}" id="edit_template_value_set">edit this Template Value Set</a> |
+        <a href="{{ url_for("view_config", config_template_id=config_template.id, template_value_set_id=template_value_set.id) }}" id="view_config_{{ template_value_set.id }}">view config</a>
     </p>
     {% if template_value_set.values.all()|length == 0 %}
         <p>There are no Template Values defined.</p>

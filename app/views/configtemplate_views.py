@@ -56,11 +56,6 @@ def edit_config_template(project_id, config_template_id=None):
             form.populate_obj(config_template)
             config_template.project = parent_project
 
-            # TODO add variable parsing and remove dummy data
-            config_template.update_template_variable("var_1", description="first variable for the template")
-            config_template.update_template_variable("var_2")
-            config_template.update_template_variable("var_3", description="another description")
-
             db.session.add(config_template)
             db.session.commit()
 
@@ -83,11 +78,11 @@ def edit_config_template(project_id, config_template_id=None):
                 flash("name already exist, please use another one", "error")
 
             else:
-                flash("Config template was not created (unknown error)", "error")
+                flash("Config template was not created (unknown error, see log for details)", "error")
             db.session.rollback()
 
         except Exception:
-            msg = "Config template was not created (unknown error)"
+            msg = "Config template was not created (unknown error, see log for details)"
             logger.error(msg, exc_info=True)
             flash(msg, "error")
 

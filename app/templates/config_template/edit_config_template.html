@@ -27,6 +27,10 @@
         {% endif %}
         <div>{{ form.template_content.label }}:<br> {{ form.template_content(rows=20,cols=80)|safe }}</div>
 
+        {% if config_template %}
+            <p><strong>Please note:</strong> If you change the content of the configuration template, all associated Template Values are removed.</p>
+        {% endif %}
+
         <input id="submit" type="submit" value="save">
     </form>
 {% endblock %}
