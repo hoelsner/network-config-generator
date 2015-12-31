@@ -86,6 +86,21 @@ class ProjectViewTest(BaseFlaskTest):
         response = self.client.get(url_for("view_project", project_id=9999))
         self.assert404(response)
 
+    def test_valid_config_template_name(self):
+        """Test the validate Config Template name function of the Project class
+
+        :return:
+        """
+        p = Project("project")
+        ct = ConfigTemplate("ct", project=p)
+
+        db.session.add_all([p, ct])
+
+        self.assertFalse(p.valid_config_template_name(None))
+        self.assertFalse(p.valid_config_template_name(""))
+        self.assertFalse(p.valid_config_template_name("ct"))
+        self.assertTrue(p.valid_config_template_name("ct1"))
+
     def test_add_project(self):
         """
         add new project
@@ -526,7 +541,7 @@ class ConfigTemplateViewTest(BaseFlaskTest):
 
         self.assert200(response)
         self.assertTemplateUsed("config_template/view_config_template.html")
-        self.assertTrue(len(TemplateVariable.query.all()) == 1)
+        self.assertTrue(len(TemplateVariable.query.all()) == 1+1)
         self.assertIn(changed_description, response.data.decode("utf-8"))
 
     def test_rename_of_a_variable_with_an_reserved_name(self):
@@ -559,7 +574,7 @@ class ConfigTemplateViewTest(BaseFlaskTest):
 
         self.assert200(response)
         self.assertTemplateUsed("template_variable/edit_template_variable.html")
-        self.assertTrue(len(TemplateVariable.query.all()) == 1)
+        self.assertTrue(len(TemplateVariable.query.all()) == 1+1)
         self.assertIn(
                 "hostname is reserved by the application, please choose another one",
                 response.data.decode("utf-8")
@@ -597,8 +612,364 @@ class ConfigTemplateViewTest(BaseFlaskTest):
 
         self.assert200(response)
         self.assertTemplateUsed("config_template/view_config_template.html")
-        self.assertTrue(len(TemplateVariable.query.all()) == 1)
+        self.assertTrue(len(TemplateVariable.query.all()) == 1+1)
         self.assertIn(changed_var_name, response.data.decode("utf-8"))
+
+    def test_valid_template_value_set_name(self):
+        """Test the validate Template Value Set name function of the Config Template class
+
+        :return:
+        """
+        p = Project("project")
+        ct = ConfigTemplate("ct", project=p)
+        tvs = TemplateValueSet("tvs", config_template=ct)
+
+        db.session.add_all([p, ct, tvs])
+
+        self.assertFalse(ct.valid_template_value_set_name(None))
+        self.assertFalse(ct.valid_template_value_set_name(""))
+        self.assertFalse(ct.valid_template_value_set_name("tvs"))
+        self.assertTrue(ct.valid_template_value_set_name("tvs1"))
+
+    def test_add_template_value_sets_using_the_csv_form(self):
+        """Test the bulk creation of Template Value Sets using the CSV form
+
+        :return:
+        """
+        project_name = "project name"
+        ct_name = "template name"
+        ct_content = "template content:\n${variable_one}\n${variable_two}\n${variable_three}"
+        tvs_csv = "hostname;variable_one;variable_two;variable_three\n" \
+                  "host_A;1;11;111\n" \
+                  "host_B;2;22;222\n" \
+                  "host_C;3;33;333\n" \
+                  "host_D;4;44;444\n" \
+                  "host_E;5;55;555\n" \
+                  "host_F;6;66;666\n"
+        p = Project(project_name)
+        db.session.add(p)
+
+        ct1 = ConfigTemplate(name=ct_name, template_content=ct_content, project=p)
+        db.session.add(ct1)
+        db.session.commit()
+
+        response = self.client.get(
+            url_for(
+                "edit_all_config_template_values",
+                project_id=ct1.project.id,
+                config_template_id=ct1.id
+            )
+        )
+        self.assert200(response)
+
+        data = {
+            "csv_content": tvs_csv
+        }
+        response = self.client.post(
+            url_for(
+                "edit_all_config_template_values",
+                project_id=ct1.project.id,
+                config_template_id=ct1.id
+            ),
+            data=data,
+            follow_redirects=True
+        )
+        self.assert200(response)
+        self.assertTemplateUsed("config_template/view_config_template.html")
+        self.assertTrue(len(TemplateValueSet.query.all()) == 6)
+
+        # verify result
+        tvs = TemplateValueSet.query.filter(
+            TemplateValueSet.hostname == "host_C",
+            TemplateValueSet.config_template == ct1
+        ).first()
+
+        self.assertIsNotNone(tvs, "Object not found, CVS parsing failed")
+        self.assertEqual(tvs.get_template_value_by_name_as_string("variable_one"), "3")
+        self.assertEqual(tvs.get_template_value_by_name_as_string("variable_two"), "33")
+        self.assertEqual(tvs.get_template_value_by_name_as_string("variable_three"), "333")
+
+        tvs = TemplateValueSet.query.filter(
+            TemplateValueSet.hostname == "host_E",
+            TemplateValueSet.config_template == ct1
+        ).first()
+
+        self.assertIsNotNone(tvs, "Object not found, CVS parsing failed")
+        self.assertEqual(tvs.get_template_value_by_name_as_string("variable_one"), "5")
+        self.assertEqual(tvs.get_template_value_by_name_as_string("variable_two"), "55")
+        self.assertEqual(tvs.get_template_value_by_name_as_string("variable_three"), "555")
+
+    def test_add_template_value_sets_with_additional_variables_in_header(self):
+        """Test the bulk creation of Template Value Sets using the CSV form with additional variables (should be
+        silently ignored).
+
+        :return:
+        """
+        project_name = "project name"
+        ct_name = "template name"
+        ct_content = "template content:\n${variable_one}\n${variable_two}\n${variable_three}"
+        tvs_csv = "hostname;variable_one;variable_two;variable_three;additional_var\n" \
+                  "host_A;1;11;111\n" \
+                  "host_B;2;22;222\n" \
+                  "host_C;3;33;333\n"
+        p = Project(project_name)
+        db.session.add(p)
+
+        ct1 = ConfigTemplate(name=ct_name, template_content=ct_content, project=p)
+        tvs1 = TemplateValueSet(hostname="host_A", config_template=ct1)
+        tvs2 = TemplateValueSet(hostname="host_B", config_template=ct1)
+        tvs3 = TemplateValueSet(hostname="host_C", config_template=ct1)
+        db.session.add_all([ct1, tvs1, tvs2, tvs3])
+        db.session.commit()
+
+        response = self.client.get(
+            url_for(
+                "edit_all_config_template_values",
+                project_id=ct1.project.id,
+                config_template_id=ct1.id
+            )
+        )
+        self.assert200(response)
+
+        data = {
+            "csv_content": tvs_csv
+        }
+        response = self.client.post(
+            url_for(
+                "edit_all_config_template_values",
+                project_id=ct1.project.id,
+                config_template_id=ct1.id
+            ),
+            data=data,
+            follow_redirects=True
+        )
+        self.assert200(response)
+        self.assertTemplateUsed("config_template/view_config_template.html")
+        self.assertTrue(len(TemplateValueSet.query.all()) == 3)
+        # no messages should be visible after submitting the CSV content
+        self.assertNotIn('<ul class="flashes">', response.data.decode("utf-8"))
+
+    def test_add_template_value_sets_with_less_variables_in_header(self):
+        """Test the bulk creation of Template Value Sets using the CSV form with less variables (silently ignored)
+
+        :return:
+        """
+        project_name = "project name"
+        ct_name = "template name"
+        ct_content = "template content:\n${variable_one}\n${variable_two}\n${variable_three}"
+        tvs_csv = "hostname;variable_one;variable_two\n" \
+                  "host_A;1;11\n" \
+                  "host_B;2;22\n" \
+                  "host_C;3;33\n"
+        p = Project(project_name)
+        db.session.add(p)
+
+        ct1 = ConfigTemplate(name=ct_name, template_content=ct_content, project=p)
+        tvs1 = TemplateValueSet(hostname="host_A", config_template=ct1)
+        tvs2 = TemplateValueSet(hostname="host_B", config_template=ct1)
+        tvs3 = TemplateValueSet(hostname="host_C", config_template=ct1)
+        db.session.add_all([ct1, tvs1, tvs2, tvs3])
+        db.session.add(ct1)
+        db.session.commit()
+
+        response = self.client.get(
+            url_for(
+                "edit_all_config_template_values",
+                project_id=ct1.project.id,
+                config_template_id=ct1.id
+            )
+        )
+        self.assert200(response)
+
+        data = {
+            "csv_content": tvs_csv
+        }
+        response = self.client.post(
+            url_for(
+                "edit_all_config_template_values",
+                project_id=ct1.project.id,
+                config_template_id=ct1.id
+            ),
+            data=data,
+            follow_redirects=True
+        )
+        self.assert200(response)
+        self.assertTemplateUsed("config_template/view_config_template.html")
+        self.assertTrue(len(TemplateValueSet.query.all()) == 3)
+        # no messages should be visible after submitting the CSV content
+        self.assertNotIn('<ul class="flashes">', response.data.decode("utf-8"))
+
+    def test_add_template_value_sets_using_the_csv_form_with_invalid_hostname(self):
+        """Test the failed creation of Template Value Sets with an invalid hostname using the CSV form
+
+        :return:
+        """
+        project_name = "project name"
+        ct_name = "template name"
+        ct_content = "template content:\n${variable_one}\n${variable_two}\n${variable_three}"
+        tvs_csv = "hostname;variable_one;variable_two;variable_three\n" \
+                  "host_A;1;11;111\n" \
+                  "host_B;2;22;222\n" \
+                  "host_C;3;33;333\n" \
+                  "host_D;4;44;444\n" \
+                  ";5;55;555\n" \
+                  "host_F;6;66;666\n"
+        p = Project(project_name)
+        db.session.add(p)
+
+        ct1 = ConfigTemplate(name=ct_name, template_content=ct_content, project=p)
+        db.session.add(ct1)
+        db.session.commit()
+
+        data = {
+            "csv_content": tvs_csv
+        }
+        response = self.client.post(
+            url_for(
+                "edit_all_config_template_values",
+                project_id=ct1.project.id,
+                config_template_id=ct1.id
+            ),
+            data=data,
+            follow_redirects=True
+        )
+        self.assert200(response)
+        self.assertTemplateUsed("config_template/view_config_template.html")
+        self.assertTrue(len(TemplateValueSet.query.all()) == 5)
+        self.assertIn("No Hostname defined for Template Value Set", response.data.decode("utf-8"))
+
+    def test_edit_template_value_sets_using_the_csv_form(self):
+        """Test the bulk edit of Template Value Sets using the CSV form
+
+        :return:
+        """
+        project_name = "project name"
+        ct_name = "template name"
+        ct_content = "template content:\n${variable_one}\n${variable_two}\n${variable_three}"
+        tvs_csv = "hostname;variable_one;variable_two;variable_three\n" \
+                  "host_A;1;11;111\n" \
+                  "host_B;2;22;222\n" \
+                  "host_C;3;33;333\n" \
+                  "host_D;4;44;444\n" \
+                  "host_E;5;55;555\n" \
+                  "host_F;6;66;666\n"
+        p = Project(project_name)
+        db.session.add(p)
+
+        ct1 = ConfigTemplate(name=ct_name, template_content=ct_content, project=p)
+        db.session.add(ct1)
+
+        tvs1 = TemplateValueSet(hostname="host_A", config_template=ct1)
+        tvs2 = TemplateValueSet(hostname="host_B", config_template=ct1)
+        tvs3 = TemplateValueSet(hostname="host_C", config_template=ct1)
+        tvs4 = TemplateValueSet(hostname="host_D", config_template=ct1)
+        tvs5 = TemplateValueSet(hostname="host_E", config_template=ct1)
+        tvs6 = TemplateValueSet(hostname="host_F", config_template=ct1)
+
+        db.session.add_all([tvs1, tvs2, tvs3, tvs4, tvs5, tvs6])
+        db.session.commit()
+
+        data = {
+            "csv_content": tvs_csv
+        }
+        response = self.client.post(
+            url_for(
+                "edit_all_config_template_values",
+                project_id=ct1.project.id,
+                config_template_id=ct1.id
+            ),
+            data=data,
+            follow_redirects=True
+        )
+        self.assert200(response)
+        self.assertTemplateUsed("config_template/view_config_template.html")
+        self.assertTrue(len(TemplateValueSet.query.all()) == 6)
+
+        received_tvs3 = TemplateValueSet.query.filter(
+            TemplateValueSet.hostname == "host_C",
+            TemplateValueSet.config_template == ct1
+        ).first()
+
+        self.assertIsNotNone(received_tvs3, "Object not found in database")
+        self.assertEqual(received_tvs3.get_template_value_by_name_as_string("variable_one"), "3")
+        self.assertEqual(received_tvs3.get_template_value_by_name_as_string("variable_two"), "33")
+        self.assertEqual(received_tvs3.get_template_value_by_name_as_string("variable_three"), "333")
+
+        received_tvs5 = TemplateValueSet.query.filter(
+            TemplateValueSet.hostname == "host_E",
+            TemplateValueSet.config_template == ct1
+        ).first()
+
+        self.assertIsNotNone(received_tvs5, "Object not found in database")
+        self.assertEqual(received_tvs5.get_template_value_by_name_as_string("variable_one"), "5")
+        self.assertEqual(received_tvs5.get_template_value_by_name_as_string("variable_two"), "55")
+        self.assertEqual(received_tvs5.get_template_value_by_name_as_string("variable_three"), "555")
+
+    def test_add_and_edit_template_value_sets_using_the_csv_form(self):
+        """Test the bulk add and edit of Template Value Sets using the CSV form
+
+        :return:
+        """
+        project_name = "project name"
+        ct_name = "template name"
+        ct_content = "template content:\n${variable_one}\n${variable_two}\n${variable_three}"
+        tvs_csv = "hostname;variable_one;variable_two;variable_three\n" \
+                  "host_A;1;11;111\n" \
+                  "host_B;2;22;222\n" \
+                  "host_C;3;33;333\n" \
+                  "host_D;4;44;444\n" \
+                  "host_E;5;55;555\n" \
+                  "host_F;6;66;666\n"
+        p = Project(project_name)
+        db.session.add(p)
+
+        ct1 = ConfigTemplate(name=ct_name, template_content=ct_content, project=p)
+        db.session.add(ct1)
+
+        tvs1 = TemplateValueSet(hostname="host_A", config_template=ct1)
+        tvs2 = TemplateValueSet(hostname="host_B", config_template=ct1)
+        tvs3 = TemplateValueSet(hostname="host_C", config_template=ct1)
+        tvs4 = TemplateValueSet(hostname="host_D", config_template=ct1)
+        tvs6 = TemplateValueSet(hostname="host_F", config_template=ct1)
+
+        db.session.add_all([tvs1, tvs2, tvs3, tvs4, tvs6])
+        db.session.commit()
+
+        data = {
+            "csv_content": tvs_csv
+        }
+        response = self.client.post(
+            url_for(
+                "edit_all_config_template_values",
+                project_id=ct1.project.id,
+                config_template_id=ct1.id
+            ),
+            data=data,
+            follow_redirects=True
+        )
+        self.assert200(response)
+        self.assertTemplateUsed("config_template/view_config_template.html")
+        self.assertTrue(len(TemplateValueSet.query.all()) == 6)
+
+        received_tvs3 = TemplateValueSet.query.filter(
+            TemplateValueSet.hostname == "host_C",
+            TemplateValueSet.config_template == ct1
+        ).first()
+
+        self.assertIsNotNone(received_tvs3, "Object not found in database")
+        self.assertEqual(received_tvs3.get_template_value_by_name_as_string("variable_one"), "3")
+        self.assertEqual(received_tvs3.get_template_value_by_name_as_string("variable_two"), "33")
+        self.assertEqual(received_tvs3.get_template_value_by_name_as_string("variable_three"), "333")
+
+        received_tvs5 = TemplateValueSet.query.filter(
+            TemplateValueSet.hostname == "host_E",
+            TemplateValueSet.config_template == ct1
+        ).first()
+
+        self.assertIsNotNone(received_tvs5, "Object not found in database")
+        self.assertEqual(received_tvs5.get_template_value_by_name_as_string("variable_one"), "5")
+        self.assertEqual(received_tvs5.get_template_value_by_name_as_string("variable_two"), "55")
+        self.assertEqual(received_tvs5.get_template_value_by_name_as_string("variable_three"), "555")
 
 
 class TemplateValueSetViewTest(BaseFlaskTest):

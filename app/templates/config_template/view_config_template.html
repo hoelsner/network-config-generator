@@ -9,32 +9,15 @@
                        <a href="{{ url_for("delete_config_template", project_id=project.id, config_template_id=config_template.id) }}" id="delete_config_template">delete</a>
     </p>
     <p>
-        <a href="{{ url_for("edit_template_value_set", config_template_id=config_template.id) }}" id="create_template_value_set">add Template Value Set</a>
+        <a href="{{ url_for("edit_template_value_set", config_template_id=config_template.id) }}" id="create_template_value_set">add Template Value Set</a> |
+        <a href="{{ url_for("edit_all_config_template_values", project_id=project.id, config_template_id=config_template.id) }}" id="edit_all_config_template_values">add/edit all Template Value Sets (CSV)</a>
     </p>
     <h3>Variables</h3>
 
     {% if config_template.variables.all()|length == 0 %}
         <p>There are no variables defined for this configuration template.</p>
     {% else %}
-        <table>
-            <comment>The following variables are used within this template:</comment>
-            <thead>
-                <tr>
-                    <th>name</th>
-                    <th>description</th>
-                    <th>action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for var in config_template.variables.all() %}
-                <tr>
-                    <td>{{ var.var_name }}</td>
-                    <td>{{ var.description }}</td>
-                    <td><a href="{{ url_for("edit_template_variable", config_template_id=config_template.id, template_variable_id=var.id) }}" id="edit_variable_{{ config_template.id }}">edit</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% include 'config_template/_variable_table.html' %}
     {% endif %}
 
     <h3>Template Value Sets for the Config Template</h3>
@@ -46,11 +29,10 @@
         <table>
             <thead>
                 <tr>
-                    <th>name</th>
                     {% for name in config_template.variables.all() %}
                         <th>{{ name.var_name }}</th>
                     {% endfor %}
-                    <th>action</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -60,7 +42,7 @@
                         <a href="{{ url_for("view_template_value_set", config_template_id=config_template.id, template_value_set_id=tvs.id) }}">{{ tvs.hostname }}</a>
                     </td>
                     {% for name in config_template.variables.all() %}
-                        <td>{{ tvs.get_template_value_by_name_as_string(name.var_name) }}</td>
+                        {% if name.var_name != "hostname" %}<td>{{ tvs.get_template_value_by_name_as_string(name.var_name) }}</td>{% endif %}
                     {% endfor %}
                     <td>
                         <a href="{{ url_for("view_config", config_template_id=config_template.id, template_value_set_id=tvs.id) }}" id="view_config_{{ tvs.id }}">view result</a> |
@@ -73,7 +55,9 @@
             </tbody>
         </table>
 
-        <p><a href="{{ url_for("download_all_config_as_zip", project_id=project.id, config_template_id=config_template.id) }}" id="download_all_configurations">download all configurations (ZIP-archive)</a></p>
+        <p>
+            <a href="{{ url_for("download_all_config_as_zip", project_id=project.id, config_template_id=config_template.id) }}" id="download_all_configurations">download all configurations (ZIP-archive)</a>
+        </p>
     {% endif %}
 
     <h3>Content of the Config Template [<a href="{{  url_for("edit_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}">edit</a>]</h3>

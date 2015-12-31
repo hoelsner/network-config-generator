@@ -1,0 +1,23 @@
+<table>
+    <comment>The following variables are used within this template:</comment>
+    <thead>
+        <tr>
+            <th>name</th>
+            <th>description</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for var in config_template.variables.all() %}
+        <tr>
+            <td>{{ var.var_name }}</td>
+            <td>{{ var.description }}</td>
+            <td>
+                {% if var.var_name != "hostname" %}
+                    <a href="{{ url_for("edit_template_variable", config_template_id=config_template.id, template_variable_id=var.id) }}" id="edit_variable_{{ config_template.id }}">edit</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

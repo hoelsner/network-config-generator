@@ -103,7 +103,7 @@ third_value ${ var_3 }
         # go back to config template overview
         content = self.browser.find_element_by_tag_name("body").text
         self.assertIn(test_config_template_name, content)
-        self.assertIn("name var_1 var_2 var_3 action", content)
+        self.assertIn("name var_1 var_2 var_3", content)
         self.assertIn(test_var_1_value, content)
 
         # add new configuration template value set

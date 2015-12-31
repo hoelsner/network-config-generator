@@ -31,6 +31,10 @@ class ConfigTemplateForm(Form):
     template_content = TextAreaField("template content")
 
 
+class EditConfigTemplateValuesForm(Form):
+    csv_content = TextAreaField("Template Value Sets")
+
+
 ProjectForm = model_form(
     Project,
     base_class=Form,

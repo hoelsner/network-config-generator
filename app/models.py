@@ -323,9 +323,16 @@ class ConfigTemplate(db.Model):
     def _create_variables_from_template_content(self):
         dcg = MakoConfigGenerator(template_string=self.template_content)
 
+        # the hostname is always defined within a TemplateValueSet, add it with a default description
+        self.update_template_variable(
+            "hostname",
+            "the hostname of the device (also used as name for the template value set)"
+        )
+
         # create new template variables on the Config Template
         for var_name in dcg.template_variables:
-            self.update_template_variable(var_name)
+            if var_name != "hostname":
+                self.update_template_variable(var_name)
 
     def rename_variable(self, old_name, new_name):
         """rename the Template Variables within the Config Template and all associated Template Value Sets
@@ -356,6 +363,13 @@ class ConfigTemplate(db.Model):
         """
         query_result = self.template_value_sets.all()
         valid = True
+
+        if not template_value_set_name:
+            valid = False
+
+        elif template_value_set_name == "":
+            valid = False
+
         for obj in query_result:
             if obj.hostname == template_value_set_name:
                 valid = False
@@ -450,6 +464,12 @@ class Project(db.Model):
         """
         query_result = self.configtemplates.all()
         valid = True
+        if not config_template_name:
+            valid = False
+
+        elif config_template_name == "":
+            valid = False
+
         for obj in query_result:
             if obj.name == config_template_name:
                 valid = False

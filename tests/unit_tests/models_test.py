@@ -62,8 +62,8 @@ class ProjectDataModelTest(BaseFlaskTest):
         # create test data
         p1 = Project(name="Project with config templates")
 
-        ct1 = ConfigTemplate(name="first")
-        ct2 = ConfigTemplate(name="second")
+        ct1 = ConfigTemplate(name="first", project=p1)
+        ct2 = ConfigTemplate(name="second", project=p1)
 
         ct1.project = p1
         ct2.project = p1
@@ -91,9 +91,9 @@ class ProjectDataModelTest(BaseFlaskTest):
         p1 = Project(name=p1_name)
         p2 = Project(name=p2_name)
 
-        p1ct1 = ConfigTemplate(name="first")
-        p1ct2 = ConfigTemplate(name="second")
-        p2ct1 = ConfigTemplate(name="first", template_content=p2ct1_template_content)
+        p1ct1 = ConfigTemplate(name="first", project=p1)
+        p1ct2 = ConfigTemplate(name="second", project=p1)
+        p2ct1 = ConfigTemplate(name="first", template_content=p2ct1_template_content, project=p2)
 
         p1ct1.project = p1
         p1ct2.project = p1
@@ -135,19 +135,15 @@ class ProjectDataModelTest(BaseFlaskTest):
         self.assertEqual(received_p2ct1.template_content, p2ct1_template_content)
 
         # try to create another "second" config template
-        faulty_ct3 = ConfigTemplate(name="second", template_content="doesn't matter")
-        faulty_ct3.project = p1
-
-        db.session.add(faulty_ct3)
         with self.assertRaises(IntegrityError):
-            db.session.commit()
+            faulty_ct3 = ConfigTemplate(name="second", template_content="doesn't matter", project=p1)
 
     def test_config_template_name_validation_function(self):
         p1 = Project(name="Project 1")
         p2 = Project(name="Project 2")
-        p1ct1 = ConfigTemplate(name="first")
-        p2ct2 = ConfigTemplate(name="first")
-        p1ct3 = ConfigTemplate(name="second")
+        p1ct1 = ConfigTemplate(name="first", project=p1)
+        p2ct2 = ConfigTemplate(name="first", project=p2)
+        p1ct3 = ConfigTemplate(name="second", project=p1)
         p1ct1.project = p1
         p2ct2.project = p2
         p1ct3.project = p1
@@ -201,9 +197,6 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
         db.session.add(project)
         db.session.add(ct1)
         db.session.add(ct2)
-        self.assertIsNone(ct1.id)
-        self.assertIsNone(ct2.id)
-
         db.session.commit()
         self.assertIsNotNone(ct1.id)
         self.assertIsNotNone(ct2.id)
@@ -259,8 +252,8 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
     def test_config_template_add_variables_and_lookup(self):
         # create test data
         p1 = Project(name="Project 1")
-        ct1 = ConfigTemplate(name="first script")
-        ct2 = ConfigTemplate(name="second script")
+        ct1 = ConfigTemplate(name="first script", project=p1)
+        ct2 = ConfigTemplate(name="second script", project=p1)
         ct1.project = p1
         ct2.project = p1
         db.session.add(p1)
@@ -286,9 +279,9 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
         ct2.update_template_variable("first variable", ct2var1_desc)
         db.session.commit()
 
-        # retrieve variables
-        self.assertTrue(len(ct1.variables.all()) == 2)
-        self.assertTrue(len(ct2.variables.all()) == 1)
+        # retrieve variables (hostname is automatically created)
+        self.assertTrue(len(ct1.variables.all()) == 2+1)
+        self.assertTrue(len(ct2.variables.all()) == 1+1)
         self.assertTrue(ct1.is_variable_defined("first_variable"))
         self.assertTrue(ct1.is_variable_defined("second_variable"))
         self.assertTrue(ct2.is_variable_defined("first_variable"))
@@ -314,8 +307,8 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
 
     def test_config_template_update_variable(self):
         p1 = Project(name="Project 1")
-        ct1 = ConfigTemplate(name="first script")
-        ct2 = ConfigTemplate(name="second script")
+        ct1 = ConfigTemplate(name="first script", project=p1)
+        ct2 = ConfigTemplate(name="second script", project=p1)
         ct1.project = p1
         ct2.project = p1
         db.session.add(p1)
@@ -334,8 +327,8 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
         ct1.update_template_variable("second variable", "description for second P1 variable")
         ct2.update_template_variable("first variable", "description for first P2 variable")
 
-        self.assertTrue(len(ct1.variables.all()) == 2)
-        self.assertTrue(len(ct2.variables.all()) == 1)
+        self.assertTrue(len(ct1.variables.all()) == 2+1)
+        self.assertTrue(len(ct2.variables.all()) == 1+1)
 
         # update value
         ct1var1_desc_mod = "modified description"
@@ -347,8 +340,8 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
 
     def test_config_template_delete_cascade_option(self):
         p1 = Project(name="Project 1")
-        ct1 = ConfigTemplate(name="first script")
-        ct2 = ConfigTemplate(name="second script")
+        ct1 = ConfigTemplate(name="first script", project=p1)
+        ct2 = ConfigTemplate(name="second script", project=p1)
         ct1.project = p1
         ct2.project = p1
         ct1.update_template_variable("test 1")
@@ -367,12 +360,12 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
         db.session.add_all([p1, ct1, ct2, tvs1, tvs2, tvs3, tvs4, tvs5])
         db.session.commit()
 
-        # test cascade option when deleting objects
-        self.assertTrue(len(TemplateVariable.query.all()) == 6, len(TemplateVariable.query.all()))
+        # test cascade option when deleting objects (hostname is automatically created)
+        self.assertTrue(len(TemplateVariable.query.all()) == 6+2, len(TemplateVariable.query.all()))
         self.assertTrue(len(TemplateValueSet.query.all()) == 5, len(TemplateValueSet.query.all()))
         db.session.delete(ct1)
         self.assertTrue(len(Project.query.all()) == 1)
-        self.assertTrue(len(TemplateVariable.query.all()) == 3, len(TemplateVariable.query.all()))
+        self.assertTrue(len(TemplateVariable.query.all()) == 3+1, len(TemplateVariable.query.all()))
         self.assertTrue(len(TemplateValueSet.query.all()) == 3, len(TemplateValueSet.query.all()))
         db.session.delete(ct2)
         self.assertTrue(len(Project.query.all()) == 1)
@@ -434,7 +427,7 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
         db.session.add_all([p, ct, tvs])
         db.session.commit()
 
-        self.assertTrue(len(ct.variables.all()) == 3)
+        self.assertTrue(len(ct.variables.all()) == 3+1)
         self.assertTrue(len(tvs.values.all()) == 4)
 
         with self.assertRaises(TemplateVariableNotFoundException):
@@ -442,7 +435,7 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
 
         ct.rename_variable(old_name="var_1", new_name="var_1_renamed")
 
-        self.assertTrue(len(ct.variables.all()) == 3)
+        self.assertTrue(len(ct.variables.all()) == 3+1)
         self.assertTrue(len(tvs.values.all()) == 4)
 
         self.assertEqual(tvs.get_template_value_by_name_as_string("var_1_renamed"), "first value")
@@ -463,7 +456,7 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
         db.session.add_all([p, ct, tvs])
         db.session.commit()
 
-        self.assertTrue(len(ct.variables.all()) == 3)
+        self.assertTrue(len(ct.variables.all()) == 3+1)
         self.assertTrue(len(tvs.values.all()) == 4)
 
         var_obj = ct.get_template_variable_by_name("var_1")
@@ -702,7 +695,7 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
 
         # verify database content
         self.assertTrue(len(ConfigTemplate.query.all()) == 1)
-        self.assertTrue(len(TemplateVariable.query.all()) == 3)
+        self.assertTrue(len(TemplateVariable.query.all()) == 3+1)
 
         # create a new template value set and verify that template variables are copied to the TemplateValueSet object
         tvs = TemplateValueSet(hostname="Value Set", config_template=ct)
@@ -742,7 +735,7 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
 
         # verify database content
         self.assertTrue(len(ConfigTemplate.query.all()) == 1)
-        self.assertTrue(len(TemplateVariable.query.all()) == 3)
+        self.assertTrue(len(TemplateVariable.query.all()) == 3+1)
 
         # create a new template value set without link to a config template
         tvs = TemplateValueSet(hostname="Value Set")

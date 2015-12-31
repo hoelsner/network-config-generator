@@ -1,12 +1,14 @@
 """
 views for the Config Template data object
 """
+import csv
 import logging
+import io
 from flask import render_template, url_for, redirect, request, flash
 from sqlalchemy.exc import IntegrityError
 from app import app, db
-from app.models import ConfigTemplate, Project
-from app.forms import ConfigTemplateForm
+from app.models import ConfigTemplate, Project, TemplateValueSet
+from app.forms import ConfigTemplateForm, EditConfigTemplateValuesForm
 from config import ROOT_URL
 
 logger = logging.getLogger()
@@ -53,6 +55,9 @@ def edit_config_template(project_id, config_template_id=None):
                 config_template = ConfigTemplate(name="", project=parent_project)
                 created = True
 
+            if form.template_content.data != config_template.template_content and (not created):
+                flash("Config Template content changed, all Template Value Sets are deleted.", "info")
+
             form.populate_obj(config_template)
             config_template.project = parent_project
 
@@ -88,6 +93,86 @@ def edit_config_template(project_id, config_template_id=None):
 
     return render_template(
         "config_template/edit_config_template.html",
+        project_id=project_id,
+        config_template=config_template,
+        form=form
+    )
+
+
+@app.route(ROOT_URL + "project/<int:project_id>/configtemplate/<int:config_template_id>/edit_all", methods=["GET",
+                                                                                                            "POST"])
+def edit_all_config_template_values(project_id, config_template_id):
+    """edit all Config Template Values based on a CSV textarea
+
+    :param project_id:
+    :param config_template_id:
+    :return:
+    """
+    Project.query.filter(Project.id == project_id).first_or_404()
+    config_template = ConfigTemplate.query.filter(ConfigTemplate.id == config_template_id).first_or_404()
+
+    form = EditConfigTemplateValuesForm(request.form, config_template)
+
+    # hostname is defined in every Template Value Set
+    variable_list = [
+        "hostname"
+    ]
+    for var in config_template.variables.all():
+        # hostname must be located as first entry
+        if var.var_name != "hostname":
+            variable_list.append(var.var_name)
+
+    if form.validate_on_submit():
+        # update values from the CSV file
+        reader = csv.DictReader(io.StringIO(form.csv_content.data), delimiter=";")
+        csv_lines = form.csv_content.data.splitlines()
+        counter = 0
+        for line in reader:
+            if "hostname" in line.keys():
+                if line["hostname"] is None:
+                    flash("Invalid Hostname for Template Value Set: '%s'" % csv_lines[counter], "error")
+
+                elif line["hostname"] == "":
+                    flash("No Hostname defined for Template Value Set: '%s'" % form.csv_content.data.splitlines()[counter], "error")
+
+                else:
+                    # try to access an existing TemplateValueSet
+                    tvs = TemplateValueSet.query.filter(
+                        TemplateValueSet.config_template_id == config_template_id,
+                        TemplateValueSet.hostname == line["hostname"]
+                    ).first()
+                    if not tvs:
+                        # element not found, create and add a flush message
+                        tvs = TemplateValueSet(hostname=line["hostname"], config_template=config_template)
+                        flash("create new Template Value Set with hostname %s" % line["hostname"], "info")
+
+                    # update variable values
+                    for var in variable_list:
+                        if var in line.keys():
+                            if line[var]:
+                                tvs.update_variable_value(var_name=var, value=line[var])
+
+                            else:
+                                tvs.update_variable_value(var_name=var, value="")
+                                logger.debug("Cannot find value for variable %s for TVS "
+                                             "object %s using CSV line %s" % (var, repr(tvs), line))
+            else:
+                # hostname not defined, no creation possible
+                flash("No hostname in CSV line found: %s" % line, "warning")
+            counter += 1
+
+        return redirect(url_for("view_config_template", project_id=project_id, config_template_id=config_template_id))
+
+    else:
+        form.csv_content.data = ";".join(variable_list)
+        for tvs in config_template.template_value_sets.all():
+            values = []
+            for var in variable_list:
+                values.append(tvs.get_template_value_by_name_as_string(var))
+            form.csv_content.data += "\n" + ";".join(values)
+
+    return render_template(
+        "config_template/edit_all_config_template_values.html",
         project_id=project_id,
         config_template=config_template,
         form=form

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Edit Values for Config Template{% endblock %}
+
+{% block content %}
+    <h2>Edit all values for the Config Template: {{ config_template.name }}</h2>
+    <p>
+        <a href="{{ url_for("view_config_template", project_id=project_id, config_template_id=config_template.id) }}" id="_back">back</a>
+    </p>
+
+    <p>You can change all values for the Config Template within the following textarea. The first line contains all variables that are defined within the Config Template. Every variable and value is separated by a semicolon. A line break will edit an existing Template Value Set or create a new one.</p>
+
+    {% include 'config_template/_variable_table.html' %}
+
+    <form method="POST" action="">
+        {{ form.csrf_token }}
+
+        {% if form.csv_content.errors %}
+            <ul class="errors">{% for error in form.csv_content.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div>{{ form.csv_content.label }}: {{ form.csv_content(rows=20, cols=80)|safe }}</div>
+
+        <input id="submit" type="submit" value="update values">
+    </form>
+{% endblock %}

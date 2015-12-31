@@ -2,7 +2,7 @@
 views for the Template Variable data object
 """
 import logging
-from flask import render_template, url_for, redirect, request, flash
+from flask import render_template, url_for, redirect, request, flash, abort
 from sqlalchemy.exc import IntegrityError
 from app import app, db
 from app.models import ConfigTemplate, TemplateVariable
@@ -23,6 +23,10 @@ def edit_template_variable(config_template_id, template_variable_id):
     """
     config_template = ConfigTemplate.query.filter(ConfigTemplate.id == config_template_id).first_or_404()
     template_variable = TemplateVariable.query.filter(TemplateVariable.id == template_variable_id).first_or_404()
+    # edit of the hostname is not permitted
+    if template_variable.var_name == "hostname":
+        abort(403)
+
     old_var_name = template_variable.var_name
 
     form = TemplateVariableForm(request.form, template_variable)
