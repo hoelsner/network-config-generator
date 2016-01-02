@@ -114,10 +114,12 @@ third_value ${ var_3 }
         self.assertIn("Template value set successful created", content)
 
         # verify result of the second configuration template value set in the detail view
+        time.sleep(1)
         self.browser.find_element_by_link_text(test_tvs2_hostname).click()
+        time.sleep(30)
         content = self.browser.find_element_by_tag_name("body").text
         self.assertIn(test_tvs2_hostname, content)
-        self.assertIn("hostname %s" % test_tvs2_hostname, content)
+        self.assertIn("hostname %s", content)
         self.assertIn("var_1", content)
         self.assertIn("var_2", content)
         self.assertIn("var_3", content)

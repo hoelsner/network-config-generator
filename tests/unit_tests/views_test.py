@@ -345,6 +345,39 @@ class ConfigTemplateViewTest(BaseFlaskTest):
         self.assertIsNotNone(ct, "Config Template not found and was therefore not created")
         self.assertEqual(ct.name, config_template_name)
 
+    def test_add_config_template_with_invalid_syntax(self):
+        """
+        add new config template with invalid syntax
+        :return:
+        """
+        p = Project("Name")
+        db.session.add(p)
+        db.session.commit()
+
+        config_template_name = "My Template name"
+        config_template_content = """!
+!
+! Test template
+!
+% if:
+something
+% else
+nothing (there is the error)
+% endif
+!"""
+        data = {
+            "name": config_template_name,
+            "template_content": config_template_content
+        }
+
+        # add a new project
+        response = self.client.post(url_for("edit_config_template", project_id=p.id), data=data, follow_redirects=True)
+
+        self.assert200(response)
+        self.assertIn("Invalid template, please correct the following error: ", response.data.decode("utf-8"))
+        self.assertTemplateUsed("config_template/edit_config_template.html")
+        self.assertTrue(len(ConfigTemplate.query.all()) == 0)
+
     def test_edit_config_template(self):
         """
         test edit of the config template data object (including renaming of the project)

@@ -1,5 +1,9 @@
 import unittest
+
+from mako.exceptions import CompileException
+
 from app.utils import MakoConfigGenerator
+from app.utils.confgen import TemplateSyntaxException
 
 
 class MakoConfigGeneratorTest(unittest.TestCase):
@@ -188,3 +192,19 @@ var_2 is always present: ${ var_2 }"""
 
         dcg.set_variable_value("var_1", "value1")
         self.assertEqual(dcg.get_rendered_result(), var_1_set_expected_result)
+
+    def test_if_else_construct_syntax_error(self):
+        test_template_with_invalid_syntax = """! used vars - var_1:${ var_1 } - var_2:${ var_2 }
+This is the if-else test
+% if var_1:
+-> var_1 one is set
+% else
+-> var_1 not set
+% endif
+var_2 is always present: ${ var_2 }"""
+
+        dcg = MakoConfigGenerator(template_string=test_template_with_invalid_syntax)
+        dcg.set_variable_value("var_1", "")
+        dcg.set_variable_value("var_2", "value2")
+        with self.assertRaises(TemplateSyntaxException):
+            dcg.get_rendered_result()

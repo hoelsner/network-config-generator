@@ -3,9 +3,18 @@ Mako based Configuration Generator
 """
 import logging
 import re
+
+from mako.exceptions import CompileException, SyntaxException
 from mako.template import Template
 
 logger = logging.getLogger("confgen")
+
+
+class TemplateSyntaxException(BaseException):
+    """
+    This exception is raised, if the rendering of the mako template failed
+    """
+    pass
 
 
 class MakoConfigGenerator:
@@ -83,7 +92,18 @@ class MakoConfigGenerator:
         :param remove_empty_lines: true, if blank lines should be removed
         :return:
         """
-        result = Template(self.template_string).render(**self._template_variable_dict)
+        try:
+            result = Template(self.template_string).render(**self._template_variable_dict)
+
+        except SyntaxException as ex:
+            msg = "Template Syntax error: %s" % str(ex)
+            logger.error(msg, exc_info=True)
+            raise TemplateSyntaxException(msg)
+
+        except CompileException as ex:
+            msg = "Template Compile error: %s" % str(ex)
+            logger.error(msg, exc_info=True)
+            raise TemplateSyntaxException(msg)
 
         # remove empty lines
         if remove_empty_lines:
