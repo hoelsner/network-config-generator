@@ -57,7 +57,7 @@ def edit_project(project_id=None):
                 project = Project(name="")
                 created = True
 
-            form.populate_obj(project)
+            project.name = form.name.data
             db.session.add(project)
             db.session.commit()
 
@@ -71,16 +71,20 @@ def edit_project(project_id=None):
 
         except IntegrityError as ex:
             if "UNIQUE constraint failed" in str(ex):
-                flash("name already exist, please use another one", "error")
+                msg = "name already exist, please use another one"
 
             else:
-                flash("Project was not created (unknown error)", "error")
+                msg = "Project was not created (unknown error, see log for details)"
+
+            flash(msg, "error")
+            logger.error(msg, exc_info=True)
             db.session.rollback()
 
         except Exception:
-            msg = "Project was not created (unknown error)"
+            msg = "Project was not created (unknown error, see log for details)"
             logger.error(msg, exc_info=True)
             flash(msg, "error")
+            db.session.rollback()
 
     return render_template("project/edit_project.html", project=project, form=form)
 
@@ -101,7 +105,10 @@ def delete_project(project_id):
             db.session.commit()
 
         except:
-            flash("Project %s was not deleted" % project.name, "error")
+            msg = "Project %s was not deleted" % project.name
+            flash(msg, "error")
+            logger.error(msg, exc_info=True)
+            db.session.rollback()
 
         flash("Project %s successful deleted" % project.name, "success")
         return redirect(url_for("view_all_projects"))

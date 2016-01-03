@@ -56,9 +56,10 @@ def edit_config_template(project_id, config_template_id=None):
                 created = True
 
             if form.template_content.data != config_template.template_content and (not created):
-                flash("Config Template content changed, all Template Value Sets are deleted.", "info")
+                flash("Config Template content changed, all Template Value Sets are deleted.", "warning")
 
-            form.populate_obj(config_template)
+            config_template.name = form.name.data
+            config_template.template_content = form.template_content.data
             config_template.project = parent_project
 
             db.session.add(config_template)
@@ -80,10 +81,13 @@ def edit_config_template(project_id, config_template_id=None):
 
         except IntegrityError as ex:
             if "UNIQUE constraint failed" in str(ex):
-                flash("name already exist, please use another one", "error")
+                msg = "name already exist, please use another one"
 
             else:
-                flash("Config template was not created (unknown error, see log for details)", "error")
+                msg = "Config template was not created (unknown error, see log for details)"
+
+            logger.error(msg, exc_info=True)
+            flash(msg, "error")
             db.session.rollback()
 
         except Exception:
@@ -95,6 +99,7 @@ def edit_config_template(project_id, config_template_id=None):
         "config_template/edit_config_template.html",
         project_id=project_id,
         config_template=config_template,
+        project=parent_project,
         form=form
     )
 
@@ -144,7 +149,7 @@ def edit_all_config_template_values(project_id, config_template_id):
                     if not tvs:
                         # element not found, create and add a flush message
                         tvs = TemplateValueSet(hostname=line["hostname"], config_template=config_template)
-                        flash("create new Template Value Set with hostname %s" % line["hostname"], "info")
+                        flash("Create new Template Value Set for hostname <strong>%s</strong>" % line["hostname"], "success")
 
                     # update variable values
                     for var in variable_list:
@@ -196,8 +201,11 @@ def delete_config_template(project_id, config_template_id):
             db.session.delete(config_template)
             db.session.commit()
 
-        except:
-            flash("Config Template %s was not deleted" % config_template.name, "error")
+        except Exception:
+            msg = "Config Template %s was not deleted (unknown error, see log for details)" % config_template.name
+            flash(msg, "error")
+            logger.error(msg, exc_info=True)
+            db.session.rollback()
 
         flash("Config Template %s successful deleted" % config_template.name, "success")
         return redirect(url_for("view_project", project_id=project_id))

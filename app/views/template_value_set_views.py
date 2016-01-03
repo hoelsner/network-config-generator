@@ -12,7 +12,7 @@ from config import ROOT_URL
 logger = logging.getLogger()
 
 
-@app.route(ROOT_URL + "template/<int:config_template_id>/valueset/<int:template_value_set_id>/")
+@app.route(ROOT_URL + "project/template/<int:config_template_id>/valueset/<int:template_value_set_id>/")
 def view_template_value_set(config_template_id, template_value_set_id):
     """view a single Template Value Set
 
@@ -24,12 +24,13 @@ def view_template_value_set(config_template_id, template_value_set_id):
     return render_template(
         "template_value_set/view_template_value_set.html",
         config_template=config_template,
+        project=config_template.project,
         template_value_set=TemplateValueSet.query.filter(TemplateValueSet.id == template_value_set_id).first_or_404()
     )
 
 
-@app.route(ROOT_URL + "template/<int:config_template_id>/valueset/add", methods=["GET", "POST"])
-@app.route(ROOT_URL + "template/<int:config_template_id>/valueset/<int:template_value_set_id>/edit", methods=["GET",
+@app.route(ROOT_URL + "project/template/<int:config_template_id>/valueset/add", methods=["GET", "POST"])
+@app.route(ROOT_URL + "project/template/<int:config_template_id>/valueset/<int:template_value_set_id>/edit", methods=["GET",
                                                                                                               "POST"])
 def edit_template_value_set(config_template_id, template_value_set_id=None):
     """edit/add a new Template Value Set
@@ -54,8 +55,7 @@ def edit_template_value_set(config_template_id, template_value_set_id=None):
                 template_value_set = TemplateValueSet(hostname="", config_template=parent_config_template)
                 created = True
 
-            form.populate_obj(template_value_set)
-
+            template_value_set.hostname = form.hostname.data
             template_value_set.config_template = parent_config_template
             template_value_set.copy_variables_from_config_template()
 
@@ -85,11 +85,10 @@ def edit_template_value_set(config_template_id, template_value_set_id=None):
         except IntegrityError as ex:
             if "UNIQUE constraint failed" in str(ex):
                 msg = "name already exist, please use another one"
-                flash(msg, "error")
 
             else:
                 msg = "Template Value set was not created (unknown error)"
-                flash(msg, "error")
+            flash(msg, "error")
             logger.error(msg, exc_info=True)
             db.session.rollback()
 
@@ -97,16 +96,18 @@ def edit_template_value_set(config_template_id, template_value_set_id=None):
             msg = "Template Value set was not created (unknown error)"
             logger.error(msg, exc_info=True)
             flash(msg, "error")
+            db.session.rollback()
 
     return render_template(
         "template_value_set/edit_template_value_set.html",
         config_template=parent_config_template,
         template_value_set=template_value_set,
+        project=parent_config_template.project,
         form=form
     )
 
 
-@app.route(ROOT_URL + "template/<int:config_template_id>/valueset/<int:template_value_set_id>/delete", methods=["GET",
+@app.route(ROOT_URL + "project/template/<int:config_template_id>/valueset/<int:template_value_set_id>/delete", methods=["GET",
                                                                                                                 "POST"])
 def delete_template_value_set(config_template_id, template_value_set_id):
     """delete the Config Template
@@ -138,5 +139,6 @@ def delete_template_value_set(config_template_id, template_value_set_id):
 
     return render_template(
         "template_value_set/delete_template_value_set.html",
-        template_value_set=template_value_set
+        template_value_set=template_value_set,
+        project=config_template.project
     )
