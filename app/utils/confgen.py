@@ -105,6 +105,11 @@ class MakoConfigGenerator:
             logger.error(msg, exc_info=True)
             raise TemplateSyntaxException(msg)
 
+        except AttributeError as ex:
+            msg = "Template Attribute error: %s" % str(ex)
+            logger.error(msg, exc_info=True)
+            raise TemplateSyntaxException(msg)
+
         # remove empty lines
         if remove_empty_lines:
             lines = result.splitlines()
