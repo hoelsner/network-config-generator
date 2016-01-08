@@ -22,3 +22,21 @@ def home():
     :return:
     """
     return render_template("home.html")
+
+
+@app.route(ROOT_URL + "how_to_use")
+def how_to_use():
+    """How to use page
+
+    :return:
+    """
+    return render_template("how_to_use.html")
+
+
+@app.route(ROOT_URL + "template_syntax")
+def template_syntax():
+    """Templating 101 page
+
+    :return:
+    """
+    return render_template("template_syntax.html")

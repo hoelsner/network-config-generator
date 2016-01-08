@@ -1,36 +1,74 @@
 {% extends "base.html" %}
-{% block title %}Edit Config Template{% endblock %}
+
+{% block title %}
+    {% if config_template %}
+        Edit Config Template
+    {% else %}
+        Add Config Template
+    {% endif %}
+{% endblock %}
 
 {% block content %}
     {% if config_template %}
-        <h2>Edit the Config Template: {{ config_template.name }}</h2>
-        <p>
-            <a href="{{ url_for("view_config_template", project_id=project_id, config_template_id=config_template.id) }}" id="_back">back</a>
-        </p>
+        <h1><span class="uk-icon-file"></span> Edit "{{ config_template.name }}"</h1>
+        <ul class="uk-subnav uk-subnav-line">
+            <li>
+                <a href="{{ url_for("view_config_template", project_id=project_id, config_template_id=config_template.id) }}" id="_back">
+                    <span class="uk-icon-arrow-left"></span> back
+                </a>
+            </li>
+        </ul>
     {% else %}
-        <h2>Add a new Config Template</h2>
-        <p>
-            <a href="{{ url_for("view_project", project_id=project_id) }}" id="_back">back</a>
-        </p>
+        <h2><span class="uk-icon-file"></span> Add a new Config Template</h2>
+        <ul class="uk-subnav uk-subnav-line">
+            <li>
+                <a href="{{ url_for("view_project", project_id=project_id) }}" id="_back">
+                    <span class="uk-icon-arrow-left"></span> back
+                </a>
+            </li>
+        </ul>
     {% endif %}
 
-    <form method="POST" action="">
+    <form method="POST" action="" class="uk-form uk-form-stacked">
         {{ form.csrf_token }}
 
-        {% if form.name.errors %}
-            <ul class="errors">{% for error in form.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-        {% endif %}
-        <div>{{ form.name.label }}: {{ form.name()|safe }}</div>
+        <div class="uk-form-row">
+            {{ form.name.label(class_="uk-form-label") }}
+            {% if form.name.errors %}
+                {{ form.name(class_="uk-form-controls uk-form-danger", size=40)|safe }}
+            {% else %}
+                {{ form.name(class_="uk-form-controls", size=40)|safe }}
+            {% endif %}
+            {% if form.name.errors %}
+                {% for error in form.name.errors %}<p class="uk-text-danger">{{ error }}</p>{% endfor %}
+            {% endif %}
+        </div>
 
-        {% if form.template_content.errors %}
-            <ul class="errors">{% for error in form.template_content.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-        {% endif %}
-        <div>{{ form.template_content.label }}:<br> {{ form.template_content(rows=20,cols=80)|safe }}</div>
+        <div class="uk-form-row">
+            {{ form.template_content.label(class_="uk-form-label") }}
+            <span style="font-family: 'Courier New'">
+                {% if form.template_content.errors %}
+                    {{ form.template_content(class_="uk-form-controls uk-width-1-1 uk-form-danger", rows=20, cols=80)|safe }}
+                {% else %}
+                    {{ form.template_content(class_="uk-form-controls uk-width-1-1", rows=20, cols=80)|safe }}
+                {% endif %}
+            </span>
+            {% if form.template_content.errors %}
+                {% for error in form.template_content.errors %}<p class="uk-text-danger">{{ error }}</p>{% endfor %}
+            {% endif %}
+            <p class="uk-text-small uk-text-muted">
+                You find a basic overview about the configuration template syntax <a href="{{ url_for("template_syntax") }}" target="_template_syntax">here</a>.
+            </p>
+        </div>
 
         {% if config_template %}
-            <p><strong>Please note:</strong> If you change the content of the configuration template, all associated Template Values are removed.</p>
+            <div class="uk-alert uk-alert-warning">
+                <strong>Please note:</strong> If you change the content of the configuration template, all associated Template Values are removed.
+            </div>
         {% endif %}
 
-        <input id="submit" type="submit" value="save">
+        <div class="uk-form-row">
+            <button id="submit" type="submit" value="save" class="uk-button uk-width-1-1 uk-button-success">save</button>
+        </div>
     </form>
 {% endblock %}

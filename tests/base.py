@@ -44,9 +44,9 @@ class BaseFlaskLiveServerTest(LiveServerTestCase):
             "browser.helperApps.neverAsk.saveToDisk",
             "text/plain,text/csv,text/html,application/zip"
         )
-
         self.browser = webdriver.WebDriver(firefox_profile=profile)
         self.browser.implicitly_wait(3)
+        self.browser.set_window_size(1280, 1024)
 
     def tearDown(self):
         db.session.remove()

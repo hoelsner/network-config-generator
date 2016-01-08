@@ -1,0 +1,28 @@
+<table class="uk-table">
+    <caption class="uk-text-right">
+        <a href="{{ url_for("edit_project") }}" id="create_project">
+            <span class="uk-icon-plus"></span> add a new Project
+        </a>
+    </caption>
+    <thead>
+        <tr>
+            <th>name</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for p in all_project_data %}
+        <tr>
+           <td>
+               <a href="{{ url_for("view_project", project_id=p.id) }}" id="view_project_{{ p.id }}">
+                   <span class="uk-icon-folder"></span> {{ p.name }}
+               </a>
+           </td>
+           <td class="uk-text-right">
+               <a href="{{ url_for("edit_project", project_id=p.id) }}" id="edit_project_{{ p.id }}"><span class="uk-icon-edit"></span> edit</a> |
+               <a href="{{ url_for("delete_project", project_id=p.id) }}" id="delete_project_{{ p.id }}"><span class="uk-icon-close"></span> delete</a>
+           </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>

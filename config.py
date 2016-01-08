@@ -6,6 +6,7 @@ APP_BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # the entire application is reachable under /ROOT_URL/ (including the static files)
 ROOT_URL = "/ncg/"
+STATIC_URL_PATH = ROOT_URL + "static"
 
 
 class DefaultConfig(object):
@@ -18,8 +19,6 @@ class DefaultConfig(object):
     # forms configuration
     WTF_CSRF_ENABLED = True
     SECRET_KEY = 'just-for-development'
-
-    STATIC_URL_PATH = ROOT_URL + "static"
 
 
 class TestConfig(DefaultConfig):

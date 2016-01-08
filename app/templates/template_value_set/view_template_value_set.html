@@ -2,33 +2,56 @@
 {% block title %}View Template Value Set{% endblock %}
 
 {% block content %}
-    <h2>Template Value Set: {{ template_value_set.hostname }}</h2>
-    <p>
-        <a href="{{  url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}" id="_back">back</a> |
-        <a href="{{  url_for("edit_template_value_set", config_template_id=config_template.id, template_value_set_id=template_value_set.id) }}" id="edit_template_value_set">edit this Template Value Set</a> |
-        <a href="{{ url_for("view_config", config_template_id=config_template.id, template_value_set_id=template_value_set.id) }}" id="view_config_{{ template_value_set.id }}">view config</a>
-    </p>
+    <h1><span class="uk-icon-table"></span> Hostname: {{ template_value_set.hostname }}</h1>
+    <ul class="uk-subnav uk-subnav-line">
+        <li>
+            <a href="{{  url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}" id="_back">
+                <span class="uk-icon-arrow-left"></span> back
+            </a>
+        </li>
+        <li>
+            <a href="{{  url_for("edit_template_value_set", config_template_id=config_template.id, template_value_set_id=template_value_set.id) }}" id="edit_template_value_set">
+                <span class="uk-icon-edit"></span> edit
+            </a>
+        </li>
+        <li>
+            <a href="{{  url_for("delete_template_value_set", config_template_id=config_template.id, template_value_set_id=template_value_set.id) }}" id="delete_template_value_set">
+                <span class="uk-icon-close"></span> delete
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for("view_config", config_template_id=config_template.id, template_value_set_id=template_value_set.id) }}" id="view_config_{{ template_value_set.id }}">
+                <span class="uk-icon-code"></span> show configuration
+            </a>
+        </li>
+    </ul>
     {% if template_value_set.values.all()|length == 0 %}
-        <p>There are no Template Values defined.</p>
+        {# This text is only visible, if there is an issue with the application #}
+        <p class="uk-text-danger uk-text-large">There are no variables defined for this configuration template, which should never be the case.</p>
     {% else %}
-        <p>The following <strong>Template Values</strong> are defined for this Config Template:</p>
-        <table>
+        <table class="uk-table">
+            <comment>The following <strong>Template Values</strong> are defined for this Template Value Set.</comment>
+            <caption>Template Value Set for Config Template "{{ template_value_set.config_template.name }}"</caption>
             <thead>
                 <tr>
-                    <th>name</th>
+                    <th style="width: 200px;">name</th>
                     <th>value</th>
+                    <th style="width: 300px">description</th>
                 </tr>
             </thead>
             <tbody>
                 {% for val in template_value_set.values.all() %}
                 <tr>
-                    <td>{{ val.var_name }}</td>
+                    <td><code>{{ val.var_name }}</code></td>
                     <td>{{ val.value }}</td>
+                    <td class="uk-text-muted uk-text-small">
+                            {{ config_template.get_template_variable_by_name(val.var_name).description }}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        <p>The <strong>hostname</strong> variable is automatically added based on the name of the Template Value Set.</p>
+        <p class="uk-text-muted uk-text-small">The <strong>hostname</strong> variable is automatically added based on the name of the Template Value Set.</p>
     {% endif %}
 
 {% endblock %}

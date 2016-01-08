@@ -2,11 +2,19 @@
 {% block title %}View Configuration for {{ template_value_set.hostname }}{% endblock %}
 
 {% block content %}
-    <h2>Configuration for {{ template_value_set.hostname }}</h2>
-    <p>
-        <a href="{{  url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}" id="_back">back</a> |
-        <a href="{{ url_for("download_config", config_template_id=config_template.id, template_value_set_id=template_value_set.id) }}" id="view_config_{{ template_value_set.id }}">download result</a>
-    </p>
+    <h1><span class="uk-icon-code"></span> Configuration for {{ template_value_set.hostname }}</h1>
+    <ul class="uk-subnav uk-subnav-line">
+        <li>
+            <a href="{{  url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}" id="_back">
+                <span class="uk-icon-arrow-left"></span> back
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for("download_config", config_template_id=config_template.id, template_value_set_id=template_value_set.id) }}" id="view_config_{{ template_value_set.id }}">
+                <span class="uk-icon-download"></span> download result
+            </a>
+        </li>
+    </ul>
 
     <p>The following configuration was generated:</p>
 

@@ -3,46 +3,71 @@
 
 {% block content %}
     {% if template_value_set %}
-        <h2>Edit Template Value Set {{ template_value_set.hostname }}</h2>
-        <p>
-            <a href="{{ url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id)  }}" id="_back">back</a>
-        </p>
+        <h1><span class="uk-icon-table"></span> Edit "{{ template_value_set.hostname }}"</h1>
+        <ul class="uk-subnav uk-subnav-line">
+            <li>
+                <a href="{{ url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id)  }}" id="_back">
+                    <span class="uk-icon-arrow-left"></span> back
+                </a>
+            </li>
+        </ul>
     {% else %}
-        <h2>Add a new Template Value Set</h2>
-        <p>
-            <a href="{{ url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}" id="_back">back</a>
-        </p>
+        <h1><span class="uk-icon-table"></span> Add a new Template Value Set</h1>
+        <ul class="uk-subnav uk-subnav-line">
+            <li>
+                <a href="{{ url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}" id="_back">
+                    <span class="uk-icon-arrow-left"></span> back
+                </a>
+            </li>
+        </ul>
     {% endif %}
 
-    <form method="POST" action="">
+    <form method="POST" action="" class="uk-form uk-form-stacked">
         {{ form.csrf_token }}
 
-        {% if form.hostname.errors %}
-            <ul class="errors">{% for error in form.hostname.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-        {% endif %}
-        <div>{{ form.hostname.label }}: {{ form.hostname|safe }}</div>
+        <div class="uk-form-row">
+            {{ form.hostname.label(class_="uk-form-label") }}
+            {% if form.hostname.errors %}
+                {{ form.hostname(class_="uk-form-controls uk-form-width-large uk-form-danger")|safe }}
+            {% else %}
+                {{ form.hostname(class_="uk-form-controls uk-form-width-large")|safe }}
+            {% endif %}
+            {% if form.hostname.errors %}
+                {% for error in form.hostname.errors %}<p class="uk-text-danger">{{ error }}</p>{% endfor %}
+            {% endif %}
+        </div>
 
         {# The variables are only changed if the config template was already created #}
         {% if template_value_set %}
-            <strong>The following variables are defined within the Template Variable Set.</strong>
-            {% if template_value_set.values.all()|length == 0 %}
-                <p>There are no variables defined within this Template Variable Set.</p>
+            {# -1 because the hostname is already displayed #}
+            {% if (template_value_set.values.all()|length - 1) == 0 %}
+                <div class="uk-form-row">
+                    <p class="uk-text-danger uk-text-large">There are no variables defined within this Template Variable Set.</p>
+                </div>
             {% else %}
+                <div class="uk-form-row">
+                    <h3>The following variables are defined within the Template Value Set:</h3>
+                </div>
                 {% for val in template_value_set.get_template_variables() %}
                     {# the hostname is changed within the regular form #}
                     {% if val.var_name == "hostname" %}
                         <input id="edit_{{ val.var_name }}" name="edit_{{ val.var_name }}" value="{{ val.value|safe }}" type="hidden">
+
                     {% else %}
-                        <div>
-                            <label for="edit_{{ val.var_name }}">{{ val.var_name }}</label>:
-                            <input id="edit_{{ val.var_name }}" name="edit_{{ val.var_name }}" value="{{ val.value|safe }}" type="text">
-                            <small>{{ config_template.get_template_variable_by_name(val.var_name).description }}</small>
-                        </div>
+                    <div class="uk-form-row">
+                        <label class="uk-form-label" for="edit_{{ val.var_name }}">Variable <code>{{ val.var_name }}</code></label>
+                        <input class="uk-form-controls uk-width-1-1" id="edit_{{ val.var_name }}" name="edit_{{ val.var_name }}" value="{{ val.value|safe }}" type="text">
+                        <span class="uk-form-help-inline uk-text-muted">
+                            {{ config_template.get_template_variable_by_name(val.var_name).description }}
+                        </span>
+                    </div>
                     {% endif %}
                 {% endfor %}
             {% endif %}
         {% endif %}
 
-        <input id="submit" type="submit" value="save">
+        <div class="uk-form-row">
+            <button id="submit" type="submit" value="save" class="uk-button uk-width-1-1 uk-button-success">save</button>
+        </div>
     </form>
 {% endblock %}

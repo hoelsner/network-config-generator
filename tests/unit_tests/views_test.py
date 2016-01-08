@@ -26,6 +26,22 @@ class CommonSiteTest(BaseFlaskTest):
         response = self.client.get(url_for("home"))
         self.assert200(response)
 
+    def test_how_to_use_page_is_available(self):
+        """
+        just a simple test to avoid an error when accessing the how to use page
+        :return:
+        """
+        response = self.client.get(url_for("how_to_use"))
+        self.assert200(response)
+
+    def test_template_syntax_page_is_available(self):
+        """
+        just a simple test to avoid an error when accessing the template syntax page
+        :return:
+        """
+        response = self.client.get(url_for("template_syntax"))
+        self.assert200(response)
+
 
 class ProjectViewTest(BaseFlaskTest):
 
@@ -202,7 +218,7 @@ class ProjectViewTest(BaseFlaskTest):
         response = self.client.get(url_for("delete_project", project_id=p.id), follow_redirects=True)
         self.assert200(response)
         self.assertTemplateUsed("project/delete_project.html")
-        delete_message = "Do you really want to delete the Project? All associated elements are also deleted."
+        delete_message = "Do you really want to delete this <strong>Project</strong>?"
         self.assertIn(delete_message, response.data.decode("utf-8"))
 
         response = self.client.post(url_for("delete_project", project_id=p.id), follow_redirects=True)
@@ -260,7 +276,11 @@ class ConfigTemplateViewTest(BaseFlaskTest):
         for name in project_template_names:
             self.assertIn(name, response.data.decode("utf-8"))
 
-        self.assertNotIn(ct_other_name, response.data.decode("utf-8"))
+        # the template is visible in the sidebar, ensure that this is not the case for the first project
+        self.assertNotIn(
+                '<a href="/ncg/project/1/template/4">\n<span class="uk-icon-file"></span>\n%s' % ct_other_name,
+                response.data.decode("utf-8")
+        )
 
     def test_view_config_template_success(self):
         """
@@ -512,8 +532,7 @@ nothing (there is the error)
                 follow_redirects=True
         )
         self.assert200(response)
-        delete_message = "Do you really want to delete the config template? " \
-                         "All associated elements are also removed."
+        delete_message = "Do you really want to delete this <strong>Config Template</strong>?"
         self.assertIn(delete_message, response.data.decode("utf-8"))
 
         response = self.client.post(
@@ -1130,7 +1149,7 @@ class TemplateValueSetViewTest(BaseFlaskTest):
 
         self.assert200(response)
         self.assertIn(tvs_hostname, response.data.decode("utf-8"))
-        self.assertTemplateUsed("config_template/view_config_template.html")
+        self.assertTemplateUsed("template_value_set/edit_template_value_set.html")
         self.assertTrue(len(TemplateValueSet.query.all()) == 1)
 
         tvs = TemplateValueSet.query.filter(

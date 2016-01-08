@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Template Syntax{% endblock %}
+
+{% block content %}
+    <h1><span class="uk-icon-cogs"></span> Template Syntax</h1>
+
+    <p>The configuration templates are parsed by a <a href="http://www.makotemplates.org/" target="_blank">Mako Template Engine</a>. The Web service doesn't
+        restrict the content of the templates, therefore almost every feature that is part of the Mako Template Engine can be used, except
+        multiple files for the rendering process. Please note that the following Syntax is tested during the development process.</p>
+
+    <h2>Basic template syntax</h2>
+
+    <p>The following example is a plain configuration template with four variables.</p>
+    <pre>!
+hostname ${ hostname }
+!
+interface ${ management_interface }
+ ip address ${ management_ip } ${ management_subnetmask }
+!</pre>
+
+    <p>The parser within the <strong>Config Template</strong> data object will automatically detect these variables and save it to the
+    database.</p>
+
+    <div class="uk-alert uk-alert-warning">
+        The <code>hostname</code> variable is always created and contains always the name of the
+        <strong>Template Value Set</strong>.
+    </div>
+    <div class="uk-alert uk-alert-danger">
+        The <strong>automatic detection of the variables within the template</strong> is only possible if the name is
+        enclosed by <code>${</code> and <code>}</code>.
+    </div>
+
+    <h2>If-else control structures</h2>
+
+    <p>The following configuration template contains a simple if/else control structure that checks if a variable is defined.</p>
+
+    <pre>% if var:
+variable defined
+% else:
+variable is not defined
+% endif</pre>
+
+    <h2>Comments within the templates</h2>
+
+    <p>The template engine allows the use of comments, which are not part of the resulting configuration. The following
+    example contains <strong>single line comments</strong>.</p>
+
+    <pre>## Some introduction that is not part of the resulting configuration
+!
+hostname ${ hostname }
+!
+interface ${ management_interface }
+ ip address ${ management_ip } ${ management_subnetmask }
+!</pre>
+
+    <p>The following example contains <strong>multiline comments</strong>.</p>
+
+    <pre><%doc>
+Some introduction that is not part of the resulting configuration
+
+There are more detailed explanations possible.
+&lt;/%doc>
+!
+hostname ${ hostname }
+!
+interface ${ management_interface }
+ ip address ${ management_ip } ${ management_subnetmask }
+!</pre>
+
+{% endblock %}

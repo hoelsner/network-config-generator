@@ -13,7 +13,7 @@ from config import ROOT_URL
 logger = logging.getLogger()
 
 
-@app.route(ROOT_URL + "template/<int:config_template_id>/valueset/<int:template_value_set_id>/config")
+@app.route(ROOT_URL + "project/template/<int:config_template_id>/valueset/<int:template_value_set_id>/config")
 def view_config(config_template_id, template_value_set_id):
     """view the resulting configuration
 
@@ -31,11 +31,12 @@ def view_config(config_template_id, template_value_set_id):
         "configuration/view_configuration.html",
         config_template=config_template,
         template_value_set=template_value_set,
+        project=config_template.project,
         config_result=config_result
     )
 
 
-@app.route(ROOT_URL + "template/<int:config_template_id>/valueset/<int:template_value_set_id>/config_download")
+@app.route(ROOT_URL + "project/template/<int:config_template_id>/valueset/<int:template_value_set_id>/config_download")
 def download_config(config_template_id, template_value_set_id):
     """download the resulting configuration
 

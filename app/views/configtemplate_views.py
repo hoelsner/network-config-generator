@@ -66,10 +66,10 @@ def edit_config_template(project_id, config_template_id=None):
             db.session.commit()
 
             if created:
-                flash("Config template successful created", "success")
+                flash("Config template <strong>%s</strong> successful created" % config_template.name, "success")
 
             else:
-                flash("Config template successful saved", "success")
+                flash("Config template <strong>%s</strong> successful saved" % config_template.name, "success")
 
             return redirect(
                 url_for(
@@ -202,7 +202,7 @@ def delete_config_template(project_id, config_template_id):
             db.session.commit()
 
         except Exception:
-            msg = "Config Template %s was not deleted (unknown error, see log for details)" % config_template.name
+            msg = "Config Template <strong>%s</strong> was not deleted (unknown error, see log for details)" % config_template.name
             flash(msg, "error")
             logger.error(msg, exc_info=True)
             db.session.rollback()

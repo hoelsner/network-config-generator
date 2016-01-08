@@ -2,7 +2,18 @@
 {% block title %}Network Configuration Generator{% endblock %}
 
 {% block content %}
-    <p>
-        <a href="{{  url_for("view_all_projects") }}" id="view_projects">view all projects</a>
+    <h1><span class="uk-icon-cogs"></span> Network Configuration Generator</h1>
+
+    <p class="uk-text-large uk-text-primary">
+        This Web service provides a simple configuration generator function for network equipment like Routers and Switches.
+        The following
     </p>
+
+    {% if all_project_data|length == 0 %}
+        <p class="uk-text-large"><a class="uk-button-link" href="{{ url_for("edit_project") }}" id="create_project">Create your first Project here!</a></p>
+    {% else %}
+        <p class="uk-text-large">Please choose a project or <a class="uk-button-link" href="{{ url_for("edit_project") }}" id="create_project">create a new Project</a>.
+
+        {% include 'project/_projects_table.html' %}
+    {% endif %}
 {% endblock %}

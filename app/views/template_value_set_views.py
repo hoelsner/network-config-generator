@@ -72,15 +72,19 @@ def edit_template_value_set(config_template_id, template_value_set_id=None):
 
             if created:
                 flash("Template value set successful created", "success")
+                return redirect(url_for(
+                    "edit_template_value_set",
+                    template_value_set_id=template_value_set.id,
+                    config_template_id=parent_config_template.id
+                ))
 
             else:
                 flash("Template value set template successful saved", "success")
-
-            return redirect(url_for(
-                "view_config_template",
-                project_id=parent_config_template.project.id,
-                config_template_id=parent_config_template.id
-            ))
+                return redirect(url_for(
+                    "view_config_template",
+                    project_id=parent_config_template.project.id,
+                    config_template_id=parent_config_template.id
+                ))
 
         except IntegrityError as ex:
             if "UNIQUE constraint failed" in str(ex):
@@ -126,9 +130,9 @@ def delete_template_value_set(config_template_id, template_value_set_id):
             db.session.commit()
 
         except:
-            flash("Config Template %s was not deleted" % template_value_set.hostname, "error")
+            flash("Config Template <strong>%s</strong> was not deleted" % template_value_set.hostname, "error")
 
-        flash("Config Template %s successful deleted" % template_value_set.hostname, "success")
+        flash("Config Template <strong>%s</strong> successful deleted" % template_value_set.hostname, "success")
         return redirect(
             url_for(
                 "view_config_template",

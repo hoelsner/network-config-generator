@@ -2,21 +2,200 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>{% block title %}{% endblock %}</title>
+    <link rel="shortcut icon" href="{{ url_for("static", filename="images/favicon.ico") }}" type="image/x-icon">
+    <link rel="apple-touch-icon-precomposed" href="{{ url_for("static", filename="images/apple-touch-icon.png") }}">
+
+    <script src="{{ url_for("static", filename="js/jquery.min.js") }}"></script>
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/uikit.almost-flat.min.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/components/sticky.almost-flat.min.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/components/notify.almost-flat.min.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/components/tooltip.min.css") }}">
+    <script src="{{ url_for("static", filename="js/uikit.min.js") }}"></script>
+    <script src="{{ url_for("static", filename="js/components/sticky.min.js") }}"></script>
+    <script src="{{ url_for("static", filename="js/components/notify.min.js") }}"></script>
+    <script src="{{ url_for("static", filename="js/components/tooltip.min.js") }}"></script>
+    <style type="text/css">
+        /* reformat the notification container */
+        body {
+            margin-bottom: 100px;
+        }
+        .uk-notify {
+            width: 60%;
+            left: 0;
+            margin-left: 20%
+        }
+
+    </style>
 </head>
 <body>
-    <h1>Network Configuration Generator</h1>
-    <hr>
+    <div class="uk-container uk-container-center">
+		<!-- Navigation Bar -->
+        <nav class="uk-navbar" data-uk-sticky="{top:10}">
+            <a class="uk-navbar-brand uk-hidden-small" href="{{ url_for("home") }}"><span class="uk-icon-cogs"></span> Network Configuration Generator</a>
+            <a href="#sidebar" class="uk-navbar-toggle uk-visible-small" data-uk-offcanvas></a>
+            <div class="uk-navbar-brand uk-navbar-center uk-visible-small">Network Configuration Generator</div>
+            <div class="uk-navbar-flip">
+                <ul class="uk-navbar-nav uk-hidden-small">
+                     <li class="">
+                        <a href="#" title="back to top" data-uk-tooltip="{pos:'bottom'}">
+                            <span class="uk-icon-arrow-up"></span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Responsive Menu -->
+        <div class="uk-offcanvas" id="sidebar">
+            <div class="uk-offcanvas-bar">
+                <ul class="uk-nav uk-nav-offcanvas" data-uk-nav>
+                    <li class=""><a href="{{ url_for("home") }}"><span class="uk-icon-home"></span> Homepage</a></li>
+                    <li class="uk-nav-divider"></li>
+                    <li class=""><a href="{{ url_for("view_all_projects") }}"><span class="uk-icon-folder"></span> View all Projects</a></li>
+                    <li class="uk-nav-divider"></li>
+                    <li class="">
+                        <a href="{{ url_for("how_to_use") }}">
+                            <i class="uk-icon-info-circle uk-margin-small-right"></i>How to use
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for("template_syntax") }}">
+                            <i class="uk-icon-question-circle uk-margin-small-right"></i> Template Syntax
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="https://github.com/hoelsner/network-config-generator" target="_blank">
+                            <i class="uk-icon-github uk-margin-small-right"></i> Github Repository
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- used to increase the space -->
+        <div class="uk-grid" data-uk-grid-margin>
+            <div class="uk-width-medium-1-4 uk-hidden-small" style="margin-top:50px">
+                <!-- Menu -->
+                <div class="uk-panel uk-panel-box" data-uk-sticky="{top:60}">
+                    <ul class="uk-nav uk-nav-side uk-nav-parent-icon" data-uk-scrollspy-nav="{closest:'li', smoothscroll:true}" data-uk-nav>
+                        <li><a href="{{ url_for("home") }}"><span class="uk-icon-home"></span> Homepage</a></li>
+
+                        <li class="uk-nav-divider"></li>
+                        <li class="uk-nav-header">Projects</li>
+                        {% if all_project_data|length != 0 %}
+                            {% for p in all_project_data %}
+                                {% if project %}
+                                    {% if project.name == p.name %}
+                                        <li class="uk-parent uk-active">
+                                    {% else %}
+                                        <li class="uk-parent">
+                                    {% endif %}
+                                {% else %}
+                                <li class="uk-parent">
+                                {% endif %}
+                                    <a href="{{ url_for("view_project", project_id=p.id) }}">
+                                        <span class="uk-icon-folder"></span>
+                                        {{ p.name }}
+                                    </a>
+                                    <ul class="uk-nav-sub">
+                                        <ul>
+                                            <li>
+                                                <a href="{{  url_for("edit_config_template", project_id=p.id) }}">
+                                                    <span class="uk-icon-plus"></span>
+                                                    add a Config Template
+                                                </a>
+                                            </li>
+                                            <li class="uk-nav-divider"></li>
+                                            {% if p.config_templates|length != 0 %}
+                                                {% for cfg in p.config_templates %}
+                                                    <li>
+                                                        <a href="{{ url_for("view_config_template", project_id=p.id, config_template_id=cfg.id) }}">
+                                                            <span class="uk-icon-file"></span>
+                                                            {{ cfg.name }}
+                                                        </a>
+                                                    </li>
+                                                {% endfor %}
+                                            {% else %}
+                                                <li>(no templates defined)</li>
+                                            {% endif %}
+                                            <li></li>
+                                        </ul>
+                                    </ul>
+                                </li>
+                            {% endfor %}
+                            <li class="uk-nav-divider"></li>
+                            <li class="">
+                                <a href="{{ url_for("edit_project") }}">
+                                    <span class="uk-icon-folder"></span> Add a new Project
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="">
+                                <a href="{{ url_for("edit_project") }}" class="uk-text-danger">
+                                    <span class="uk-icon-folder"></span> Add your first Project
+                                </a>
+                            </li>
+                        {% endif %}
+                        <li class="uk-nav-divider"></li>
+                        <li class="">
+                            <a href="{{ url_for("how_to_use") }}">
+                                <i class="uk-icon-info-circle uk-margin-small-right"></i> How to use
+                            </a>
+                        </li>
+                        <li class="">
+                            <a href="{{ url_for("template_syntax") }}">
+                                <i class="uk-icon-question-circle uk-margin-small-right"></i> Template Syntax
+                            </a>
+                        </li>
+                        <li class="">
+                            <a href="https://github.com/hoelsner/network-config-generator" target="_blank">
+                                <i class="uk-icon-github uk-margin-small-right"></i> Github Repository
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="uk-width-medium-3-4" id="main_content" style="margin-top:50px">
+                <!-- Content -->
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+    <script type="application/javascript">
+    $(document).ready(function() {
     {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul class="flashes">
-                {% for category, message in messages %}
-                    <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-            <hr>
-        {% endif %}
+        {% if messages %}{% for category, message in messages %}
+            {% if category == "error" %}
+                UIkit.notify("<i class='uk-icon-exclamation'></i> {{ message|safe }}", {
+                    status:'danger',
+                    timeout: 0,
+                    pos:'top-center'
+                });
+            {% elif category == "warning" %}
+                UIkit.notify("<i class='uk-icon-check'></i> {{ message|safe }}", {
+                    status:'warning',
+                    timeout: 3000,
+                    pos:'top-center'
+                });
+            {% elif category == "success" %}
+                UIkit.notify("<i class='uk-icon-check'></i> {{ message|safe }}", {
+                    status:'success',
+                    timeout: 3000,
+                    pos:'top-center'
+                });
+            {% else %}
+                UIkit.notify("<i class='uk-icon-info'></i> {{ message|safe }}", {
+                    status:'info',
+                    timeout: 5000,
+                    pos:'top-center'
+                });
+            {% endif %}
+        {% endfor %}{% endif %}
     {% endwith %}
-{% block content %}{% endblock %}
+    })
+    </script>
 </body>
 </html>

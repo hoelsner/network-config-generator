@@ -2,71 +2,135 @@
 {% block title %}View Config Template{% endblock %}
 
 {% block content %}
-    <h2>Config template: {{ config_template.name }}</h2>
-    <p>
-        <a href="{{ url_for("view_project", project_id=project.id) }}" id="_back">back</a> |
-        <a href="{{ url_for("edit_config_template", project_id=project.id, config_template_id=config_template.id) }}" id="edit_template_value_set">edit</a> |
-                       <a href="{{ url_for("delete_config_template", project_id=project.id, config_template_id=config_template.id) }}" id="delete_config_template">delete</a>
-    </p>
-    <p>
-        <a href="{{ url_for("edit_template_value_set", config_template_id=config_template.id) }}" id="create_template_value_set">add Template Value Set</a> |
-        <a href="{{ url_for("edit_all_config_template_values", project_id=project.id, config_template_id=config_template.id) }}" id="edit_all_config_template_values">add/edit all Template Value Sets (CSV)</a>
-    </p>
-    <h3>Variables</h3>
+    <h1><span class="uk-icon-file"></span> {{ config_template.name }}</h1>
+    <ul class="uk-subnav uk-subnav-line">
+        <li>
+            <a href="{{ url_for("view_project", project_id=project.id) }}" id="_back">
+                <span class="uk-icon-arrow-left"></span> back
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for("edit_config_template", project_id=project.id, config_template_id=config_template.id) }}" id="edit_template_value_set">
+                <span class="uk-icon-edit"></span> edit
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for("delete_config_template", project_id=project.id, config_template_id=config_template.id) }}" id="delete_config_template">
+                <span class="uk-icon-close"></span> delete
+            </a>
+        </li>
+    </ul>
+
+    <h2><span class="uk-icon-cube"></span> Variables</h2>
 
     {% if config_template.variables.all()|length == 0 %}
-        <p>There are no variables defined for this configuration template.</p>
+        {# This text is only visible, if there is an issue with the application #}
+        <p class="uk-text-danger uk-text-large">There are no variables defined for this configuration template, which should never be the case.</p>
     {% else %}
         {% include 'config_template/_variable_table.html' %}
     {% endif %}
 
-    <h3>Template Value Sets for the Config Template</h3>
+    <h2><span class="uk-icon-table"></span> Template Value Sets<small> for this Template</small></h2>
 
     {% if config_template.template_value_sets.all()|length == 0 %}
-        <p>There are not Template Value Sets defined.</p>
-    {% else %}
-        <p>The following <strong>Template Value Sets</strong> are defined for this Config Template:</p>
-        <table>
-            <thead>
-                <tr>
-                    {% for name in config_template.variables.all() %}
-                        <th>{{ name.var_name }}</th>
-                    {% endfor %}
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for tvs in config_template.template_value_sets.all() %}
-                <tr>
-                    <td>
-                        <a href="{{ url_for("view_template_value_set", config_template_id=config_template.id, template_value_set_id=tvs.id) }}">{{ tvs.hostname }}</a>
-                    </td>
-                    {% for name in config_template.variables.all() %}
-                        {% if name.var_name != "hostname" %}<td>{{ tvs.get_template_value_by_name_as_string(name.var_name) }}</td>{% endif %}
-                    {% endfor %}
-                    <td>
-                        <a href="{{ url_for("view_config", config_template_id=config_template.id, template_value_set_id=tvs.id) }}" id="view_config_{{ tvs.id }}">view result</a> |
-                        <a href="{{ url_for("download_config", config_template_id=config_template.id, template_value_set_id=tvs.id) }}" id="download_config_{{ tvs.id }}">download result</a> |
-                        <a href="{{ url_for("edit_template_value_set", config_template_id=config_template.id, template_value_set_id=tvs.id) }}" id="edit_template_value_set_{{ tvs.id }}">edit</a> |
-                        <a href="{{ url_for("delete_template_value_set", config_template_id=config_template.id, template_value_set_id=tvs.id) }}" id="delete_template_value_set_{{ tvs.id }}">delete</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
+        <p>There are no <strong>Template Value Sets</strong> defined.</p>
         <p>
-            <a href="{{ url_for("download_all_config_as_zip", project_id=project.id, config_template_id=config_template.id) }}" id="download_all_configurations">download all configurations (ZIP-archive)</a>
+            <a href="{{ url_for("edit_template_value_set", config_template_id=config_template.id) }}" id="create_template_value_set">
+                <span class="uk-icon-plus"></span>
+                Create the first Template Value Set.
+            </a>
+        </p>
+        <p class="uk-text-primary uk-text-center">
+            <a href="{{ url_for("edit_all_config_template_values", project_id=project.id, config_template_id=config_template.id) }}" id="edit_all_config_template_values">
+                <span class="uk-icon-th-large"></span> add/edit all Template Value Sets (CSV)
+            </a>
+        </p>
+    {% else %}
+        <div class="uk-overflow-container">
+            <table class="uk-table">
+                <comment>The following <strong>Template Value Sets</strong> are defined for this Config Template:</comment>
+                <caption class="uk-text-left">
+                    <a href="{{ url_for("edit_template_value_set", config_template_id=config_template.id) }}" id="create_template_value_set">
+                        <span class="uk-icon-plus"></span>
+                        add Template Value Set
+                    </a>
+                </caption>
+                <thead>
+                    <tr>
+                        {% for name in config_template.variables.all() %}
+                            {% if name.var_name != "hostname" %}
+                                <th style="font-weight: normal"><code>{{ name.var_name }}</code></th>
+                            {% else %}
+                                <th style="font-weight: normal; min-width: 100px"><code>{{ name.var_name }}</code></th>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tvs in config_template.template_value_sets.all() %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for("view_template_value_set", config_template_id=config_template.id, template_value_set_id=tvs.id) }}">{{ tvs.hostname }}</a>
+                            <br>
+                            <a href="{{ url_for("view_config", config_template_id=config_template.id, template_value_set_id=tvs.id) }}" id="view_config_{{ tvs.id }}">
+                                <span class="uk-icon-code" data-uk-tooltip title="show configuration for {{ tvs.hostname }}"></span>
+                            </a> |
+
+                            <a href="{{ url_for("download_config", config_template_id=config_template.id, template_value_set_id=tvs.id) }}" id="download_config_{{ tvs.id }}">
+                                <span class="uk-icon-download" data-uk-tooltip title="download configuration for {{ tvs.hostname }}"></span>
+                            </a> |
+
+                            <a href="{{ url_for("edit_template_value_set", config_template_id=config_template.id, template_value_set_id=tvs.id) }}" id="edit_template_value_set_{{ tvs.id }}">
+                                <span class="uk-icon-edit" data-uk-tooltip title="edit value set for {{ tvs.hostname }}"></span>
+                            </a> |
+
+                            <a href="{{ url_for("delete_template_value_set", config_template_id=config_template.id, template_value_set_id=tvs.id) }}" id="delete_template_value_set_{{ tvs.id }}">
+                                <span class="uk-icon-close" data-uk-tooltip title="delete value set for {{ tvs.hostname }}"></span>
+                            </a>
+                        </td>
+
+                        {% for name in config_template.variables.all() %}
+                            {% if name.var_name != "hostname" %}
+                                <td>{{ tvs.get_template_value_by_name_as_string(name.var_name) }}</td>
+                            {% endif %}
+                        {% endfor %}
+
+                        <td class="uk-text-right">
+
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <p class="uk-text-primary uk-text-center">
+            <a href="{{ url_for("edit_all_config_template_values", project_id=project.id, config_template_id=config_template.id) }}" id="edit_all_config_template_values">
+                <span class="uk-icon-th-large"></span> add/edit all Template Value Sets (CSV)
+            </a> |
+            <a href="{{ url_for("download_all_config_as_zip", project_id=project.id, config_template_id=config_template.id) }}" id="download_all_configurations">
+                <span class="uk-icon-download"></span> download all configurations (ZIP-archive)
+            </a>
         </p>
     {% endif %}
 
-    <h3>Content of the Config Template [<a href="{{  url_for("edit_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}">edit</a>]</h3>
+    <h2>
+        Content of the Config Template
+        <small>
+            <a href="{{ url_for("edit_config_template", project_id=project.id, config_template_id=config_template.id) }}" id="edit_template_value_set">
+                <span class="uk-icon-edit"></span>
+            </a>
+        </small>
+    </h2>
+    <p class="uk-text-small uk-text-muted">
+        You find a basic overview about the configuration template syntax <a href="{{ url_for("template_syntax") }}" target="_template_syntax">here</a>.
+    </p>
 
     {% if config_template.template_content %}
         <pre>{{ config_template.template_content }}</pre>
+        <div class="uk-alert uk-alert-warning">If you need to <strong>change the content of the template</strong>, please note that this operation will delete <strong>all Template Value Sets</strong> that are defined within this Config Template.</div>
     {% else %}
-        <pre>(please define a configuration template for this object)</pre>
+        <p class="uk-text-warning">(please define a configuration template for this object) <a href="{{  url_for("edit_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}"><span class="uk-icon-edit"></span> edit</a></p>
     {% endif %}
-
 
 {% endblock %}

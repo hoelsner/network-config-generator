@@ -62,10 +62,10 @@ def edit_project(project_id=None):
             db.session.commit()
 
             if created:
-                flash("Project %s successful created" % project.name, "success")
+                flash("Project <strong>%s</strong> successful created" % project.name, "success")
 
             else:
-                flash("Project %s successful saved" % project.name, "success")
+                flash("Project <strong>%s</strong> successful saved" % project.name, "success")
 
             return redirect(url_for("view_project", project_id=project.id))
 
@@ -105,12 +105,12 @@ def delete_project(project_id):
             db.session.commit()
 
         except:
-            msg = "Project %s was not deleted" % project.name
+            msg = "Project <strong>%s</strong> was not deleted" % project.name
             flash(msg, "error")
             logger.error(msg, exc_info=True)
             db.session.rollback()
 
-        flash("Project %s successful deleted" % project.name, "success")
+        flash("Project <strong>%s</strong> successful deleted" % project.name, "success")
         return redirect(url_for("view_all_projects"))
 
     return render_template("project/delete_project.html", project=project)

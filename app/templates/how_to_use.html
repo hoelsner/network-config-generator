@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}How to use{% endblock %}
+
+{% block content %}
+    <h1><span class="uk-icon-cogs"></span> How to use the Network Configuration Generator</h1>
+
+    <p class="uk-text-large uk-text-primary">
+        The primary function of this Web service is to create many configurations based on a common template file.
+        It's like a “next generation” mass mailing function for configuration files.
+    </p>
+
+    <h2><span class="uk-icon-folder"></span> 1. Create a new Project</h2>
+
+    <p>
+        The entire data structure is build around <strong>Projects</strong>. You can create a new Project on the
+        homepage or in the sidebar of the application. The dialog to create a new Project is straightforward.
+    </p>
+
+    <p style="text-align: center">
+        <img style="border: solid 1px" src="{{ url_for("static", filename="images/how_to/add_project.png") }}" alt="" width="700">
+    </p>
+
+    <h2><span class="uk-icon-file"></span> 2. Create one or more Config Templates</h2>
+
+    <p>
+        After you've created a Project, you can add one or more <strong>Config Templates</strong>. You define a configuration
+        template using the <a href="{{ url_for("template_syntax") }}">Template Syntax</a> used within this Web service.
+        <strong>Variables</strong> (<code>${ some_value }</code>) are dynamically detected and created for the use within
+        the configuration template.
+    </p>
+
+    <p style="text-align: center">
+        <img style="border: solid 1px" src="{{ url_for("static", filename="images/how_to/add_a_new_config_template.png") }}" alt="" width="700">
+    </p>
+
+    <h2><span class="uk-icon-table"></span> 3. Add as many Template Value Sets as you need</h2>
+
+    <p>
+        The overview about a Config Template contains a list with all <strong>template variables</strong>, the associated
+        <strong>Template Value Sets</strong> and the original <strong>configuration template</strong>.
+    </p>
+
+    <p>
+        By default, a <strong>hostname</strong> variable is always created. This variable equals the name of the Template
+        Value Set and must be unique within a single Config Template.
+    </p>
+
+    <p>
+        You have two options to create/edit a Template Value Set as seen in the table.
+    </p>
+
+    <p style="text-align: center">
+        <img style="border: solid 1px" src="{{ url_for("static", filename="images/how_to/view_config_template-template_value_set_empty.png") }}" alt="" width="700">
+    </p>
+
+    <h3> 3.1 Add a single Template Value Set</h3>
+
+    <p>
+        If you click "Create the first Template Value Set", you can create a single set as the seen in the following dialog.
+    </p>
+
+    <p style="text-align: center">
+        <img style="border: solid 1px" src="{{ url_for("static", filename="images/how_to/edit_template_value_set.png") }}" alt="" width="700">
+    </p>
+
+    <h3> 3.2 Add multiple Template Values Sets using CSV</h3>
+
+    <p>
+        To add or edit multiple <strong>Template Value Sets</strong>, you can use the "add/edit Template Value Sets (CSV)"
+        link below the table.
+    </p>
+
+    <p style="text-align: center">
+        <img style="border: solid 1px" src="{{ url_for("static", filename="images/how_to/edit_template_value_set_by_csv.png") }}" alt="" width="700">
+    </p>
+
+    <h2><span class="uk-icon-code"></span> 4. Download all configuration files</h2>
+
+    <p>
+        To download the resulting configurations, you can use the "download all configurations (ZIP-Archive)" link located
+        below the Template Value Set table at the Config Template view or the download link (<span class="uk-icon-download"></span>
+        next to or below the Template Value Set name).
+    </p>
+
+    <p style="text-align: center">
+        <img style="border: solid 1px" src="{{ url_for("static", filename="images/how_to/view_config_template-template_value_set.png") }}" alt="" width="700">
+    </p>
+
+    <p>
+        To show the configuration result, use the <span class="uk-icon-code"></span>
+        link.
+    </p>
+
+    <p style="text-align: center">
+        <img style="border: solid 1px" src="{{ url_for("static", filename="images/how_to/view_configuration.png") }}" alt="" width="700">
+    </p>
+
+{% endblock %}

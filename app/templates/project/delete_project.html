@@ -2,12 +2,25 @@
 {% block title %}Delete Project{% endblock %}
 
 {% block content %}
-    <h2>Project: {{ project.name }}</h2>
-    <p>
-        <a href="{{ url_for("view_all_projects") }}" id="_back">back</a>
-    </p>
-    <form action="" method="POST">
-        <p>Do you really want to delete the Project? All associated elements are also deleted.</p>
-        <input id="submit" type="submit" name="yes" value="yes" />
+    <h1>
+        <span class="uk-icon-folder"></span> Delete "{{ project.name }}"
+    </h1>
+
+    <ul class="uk-subnav uk-subnav-line">
+        <li>
+            <a href="{{ url_for("view_all_projects") }}" id="_back">
+                <span class="uk-icon-arrow-left"></span> back
+            </a>
+        </li>
+    </ul>
+
+    <form action="" method="POST" class="uk-form">
+        <div class="uk-form-row">
+            <p class="uk-text-large uk-text-danger">Do you really want to delete this <strong>Project</strong>? All associated elements are also deleted!</p>
+        </div>
+
+        <div class="uk-form-row">
+            <button id="submit" type="submit" name="yes" value="yes" class="uk-button uk-button-danger">Delete Project</button>
+        </div>
     </form>
 {% endblock %}

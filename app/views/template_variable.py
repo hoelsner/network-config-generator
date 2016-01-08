@@ -12,7 +12,7 @@ from config import ROOT_URL
 logger = logging.getLogger()
 
 
-@app.route(ROOT_URL + "template/<int:config_template_id>/variable/<int:template_variable_id>/edit", methods=["GET",
+@app.route(ROOT_URL + "project/template/<int:config_template_id>/variable/<int:template_variable_id>/edit", methods=["GET",
                                                                                                              "POST"])
 def edit_template_variable(config_template_id, template_variable_id):
     """edit a Template Variable
@@ -55,14 +55,16 @@ def edit_template_variable(config_template_id, template_variable_id):
 
         except IntegrityError as ex:
             if "UNIQUE constraint failed" in str(ex):
-                flash("name already exist, please use another one", "error")
+                msg = "name already exist, please use another one"
 
             else:
-                flash("Template variable was not created (unknown error)", "error")
+                msg = "Template variable was not created (unknown error, see log for details)"
+
+            logger.error(msg, exc_info=True)
             db.session.rollback()
 
         except Exception:
-            msg = "Template variable was not created (unknown error)"
+            msg = "Template variable was not created  (unknown error, see log for details)"
             logger.error(msg, exc_info=True)
             flash(msg, "error")
 
@@ -70,5 +72,6 @@ def edit_template_variable(config_template_id, template_variable_id):
         "template_variable/edit_template_variable.html",
         config_template=config_template,
         template_variable=template_variable,
+        project=config_template.project,
         form=form
     )
