@@ -1,0 +1,14 @@
+{% extends 'base_no_sidebar.html' %}
+
+{% block title %}HTTP 500 - Internal Server Error{% endblock %}
+
+{% block full_size_content %}
+    <div class="uk-width-medium-1-1 uk-text-center uk-container-center" id="main_content" style="margin-top:50px">
+        <!-- Content -->
+        <h1>HTTP 500 - Internal Server Error</h1>
+
+        <p class="uk-text-large uk-text-danger">Ooops... something went wrong during server-side processing. Please notify the system administrator about this issue.</p>
+
+        <p class="uk-text-large"><a href="{{ url_for("home") }}"><span class="uk-icon-home"></span> back to Homepage</a></p>
+    </div>
+{% endblock %}

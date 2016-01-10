@@ -1,0 +1,14 @@
+{% extends 'base_no_sidebar.html' %}
+
+{% block title %}HTTP 403 - Forbidden{% endblock %}
+
+{% block full_size_content %}
+    <div class="uk-width-medium-1-1 uk-text-center uk-container-center" id="main_content" style="margin-top:50px">
+        <!-- Content -->
+        <h1>HTTP 403 - Forbidden</h1>
+
+        <p class="uk-text-large uk-text-danger">You are not allowed to access this resource.</p>
+
+        <p class="uk-text-large"><a href="{{ url_for("home") }}"><span class="uk-icon-home"></span> back to Homepage</a></p>
+    </div>
+{% endblock %}
