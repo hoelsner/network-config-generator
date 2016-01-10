@@ -1,5 +1,8 @@
 """
 configuration objects for the flask application and all associated components
+
+The entire Flask app configuration is controled by the ```APP_SETTINGS``` environment variable. If this variable
+is not set, the DefaultConfig is used.
 """
 import os
 APP_BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -21,9 +24,18 @@ class DefaultConfig(object):
     SECRET_KEY = 'just-for-development'
 
 
+class ProductionConfig(DefaultConfig):
+    """
+    configuration for production deployments
+    """
+    SECRET_KEY = os.getenv('APP_SECRET_KEY', "not set")
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(APP_BASE_DIR, 'production.db')
+    PRODUCTION = True
+
+
 class TestConfig(DefaultConfig):
     """
-    Configuration for basic tests
+    configuration for unit tests
     """
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(APP_BASE_DIR, 'app_test.db')
     TESTING = True
@@ -31,7 +43,7 @@ class TestConfig(DefaultConfig):
 
 class LiveServerTestConfig(DefaultConfig):
     """
-    Configuration of the Live Server test cases
+    configuration for Live Server tests
     """
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(APP_BASE_DIR, 'app_livetest.db')
     LIVESERVER_PORT = 11111

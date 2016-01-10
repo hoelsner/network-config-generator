@@ -1,0 +1,80 @@
+---
+# This playbook stage a Production instance of the Network Configuration Generator on the local system
+- hosts: localhost
+  gather_facts: False
+  sudo: yes
+
+  tasks:
+  # install package dependencies
+  - name: update apt cache
+    apt: update_cache=yes cache_valid_time=10800
+  - name: install packages
+    apt: pkg={{ item }} state=installed
+    with_items:
+    - python3.4
+    - python3-pip
+    - build-essential
+    - python-dev
+    - python3-dev
+    - python-virtualenv
+    - nginx
+
+  # setup python environment for site
+  - name: create virtualenv
+    command: virtualenv /var/www/network_config_generator/venv -p python3.4
+    sudo_user: ncg
+    args:
+      creates: /var/www/network_config_generator/venv/bin/python3
+  - name: install python3 dependencies
+    pip:
+      requirements=/var/www/network_config_generator/requirements.txt
+      virtualenv=/var/www/network_config_generator/venv
+      executable=pip3
+
+  # create key file if not exists
+  - name: generate key file for CSRF protection
+    shell: venv/bin/python3 deploy/scripts/create_key_file.py
+    sudo_user: ncg
+    args:
+      creates: network_config_generator.key
+      chdir: /var/www/network_config_generator/
+
+  # configure gunicorn
+  - name: create gunicorn service
+    copy:
+      src=templates/gunicorn.template.conf
+      dest=/etc/init/gunicorn-network_config_generator.conf
+  - name: set secret key on gunicorn configuration
+    replace:
+      dest=/etc/init/gunicorn-network_config_generator.conf
+      regexp='SECRET_KEY_CONTENT'
+      replace='{{ lookup('file', '/var/www/network_config_generator/network_config_generator.key') }}'
+
+  # configure nginx site
+  - name: delete nginx default configuration
+    file:
+      path=/etc/nginx/sites-enabled/default
+      state=absent
+  - name: copy nginx configuration
+    copy:
+      src=templates/nginx.template.conf
+      dest=/etc/nginx/sites-available/network_config_generator
+  - name: enable site in nginx
+    file:
+      src=/etc/nginx/sites-available/network_config_generator
+      dest=/etc/nginx/sites-enabled/network_config_generator
+      state=link
+
+  # update database
+  - name: update database schema
+    shell: deploy/scripts/update_database.sh
+    args:
+      chdir: /var/www/network_config_generator/
+
+  # restart services
+  - name: restart nginx service
+    service: name=nginx state=restarted enabled=yes
+    sudo: true
+  - name: restart gunicorn service
+    service: name=gunicorn-network_config_generator state=restarted enabled=yes
+    sudo: true

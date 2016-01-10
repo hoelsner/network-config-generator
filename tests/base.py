@@ -2,6 +2,7 @@
 base classes for Flask test cases using the Flask-Testing module
 """
 import os
+import sys
 from flask.ext.testing import TestCase, LiveServerTestCase
 from selenium.webdriver.firefox import webdriver
 from app import app, db
@@ -29,6 +30,18 @@ class BaseFlaskLiveServerTest(LiveServerTestCase):
     def create_app(self):
         app.config.from_object('config.LiveServerTestConfig')
         return app
+
+    def get_server_url(self):
+        """
+        Return the url of the test server, if no liveserver url is defined
+        """
+        url = None
+        for arg in sys.argv:
+            if 'liveserver' in arg:
+                url = arg.split("=")[1]
+        if url:
+            return url
+        return 'http://localhost:%s' % self.port
 
     def setUp(self):
         db.create_all()
