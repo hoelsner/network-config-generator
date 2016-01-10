@@ -35,7 +35,7 @@
     {% if config_template.template_value_sets.all()|length == 0 %}
         <p>There are no <strong>Template Value Sets</strong> defined.</p>
         <p>
-            <a href="{{ url_for("edit_template_value_set", config_template_id=config_template.id) }}" id="create_template_value_set">
+            <a href="{{ url_for("add_template_value_set", config_template_id=config_template.id) }}" id="create_template_value_set">
                 <span class="uk-icon-plus"></span>
                 Create the first Template Value Set.
             </a>
@@ -50,7 +50,7 @@
             <table class="uk-table">
                 <comment>The following <strong>Template Value Sets</strong> are defined for this Config Template:</comment>
                 <caption class="uk-text-left">
-                    <a href="{{ url_for("edit_template_value_set", config_template_id=config_template.id) }}" id="create_template_value_set">
+                    <a href="{{ url_for("add_template_value_set", config_template_id=config_template.id) }}" id="create_template_value_set">
                         <span class="uk-icon-plus"></span>
                         add Template Value Set
                     </a>

@@ -30,74 +30,108 @@ def view_template_value_set(config_template_id, template_value_set_id):
 
 
 @app.route(ROOT_URL + "project/template/<int:config_template_id>/valueset/add", methods=["GET", "POST"])
-@app.route(ROOT_URL + "project/template/<int:config_template_id>/valueset/<int:template_value_set_id>/edit", methods=["GET",
-                                                                                                              "POST"])
-def edit_template_value_set(config_template_id, template_value_set_id=None):
-    """edit/add a new Template Value Set
+def add_template_value_set(config_template_id):
+    """add a new Template Value Set
+
+    :param config_template_id:
+    :return:
+    """
+    parent_config_template = ConfigTemplate.query.filter(ConfigTemplate.id == config_template_id).first_or_404()
+    form = TemplateValueSetForm(request.form)
+
+    if form.validate_on_submit():
+        try:
+            template_value_set = TemplateValueSet(hostname="", config_template=parent_config_template)
+
+            template_value_set.hostname = form.hostname.data
+            template_value_set.config_template = parent_config_template
+            template_value_set.copy_variables_from_config_template()
+
+            db.session.add(template_value_set)
+            db.session.commit()
+
+            flash("Template Value Set successful created", "success")
+            return redirect(url_for(
+                "edit_template_value_set",
+                template_value_set_id=template_value_set.id,
+                config_template_id=parent_config_template.id
+            ))
+
+        except IntegrityError as ex:
+            if "UNIQUE constraint failed" in str(ex):
+                msg = "Template Value Set hostname already in use, please use another one"
+
+            else:
+                msg = "Template Value Set was not created (unknown error)"
+            flash(msg, "error")
+            logger.error(msg, exc_info=True)
+            db.session.rollback()
+
+        except Exception:
+            msg = "Template Value Set was not created (unknown error)"
+            logger.error(msg, exc_info=True)
+            flash(msg, "error")
+            db.session.rollback()
+
+    return render_template(
+        "template_value_set/add_template_value_set.html",
+        config_template=parent_config_template,
+        project=parent_config_template.project,
+        form=form
+    )
+
+
+@app.route(
+    ROOT_URL + "project/template/<int:config_template_id>/valueset/<int:template_value_set_id>/edit",
+    methods=["GET", "POST"]
+)
+def edit_template_value_set(config_template_id, template_value_set_id):
+    """edit a Template Value Set
 
     :param config_template_id:
     :param template_value_set_id:
     :return:
     """
     parent_config_template = ConfigTemplate.query.filter(ConfigTemplate.id == config_template_id).first_or_404()
-    if template_value_set_id:
-        template_value_set = TemplateValueSet.query.get(template_value_set_id)
-
-    else:
-        template_value_set = None
+    template_value_set = TemplateValueSet.query.filter(TemplateValueSet.id == template_value_set_id).first_or_404()
 
     form = TemplateValueSetForm(request.form, template_value_set)
 
     if form.validate_on_submit():
         try:
-            created = False
-            if not template_value_set:
-                template_value_set = TemplateValueSet(hostname="", config_template=parent_config_template)
-                created = True
-
             template_value_set.hostname = form.hostname.data
             template_value_set.config_template = parent_config_template
             template_value_set.copy_variables_from_config_template()
 
             # update variable data
-            if not created:
-                for key in template_value_set.get_template_value_names():
-                    template_value_set.update_variable_value(var_name=key, value=request.form["edit_" + key])
+            for key in template_value_set.get_template_value_names():
+                template_value_set.update_variable_value(var_name=key, value=request.form["edit_" + key])
 
-                # hostname is always the same as the name of the template value set
-                template_value_set.update_variable_value(var_name="hostname", value=template_value_set.hostname)
+            # hostname is always the same as the name of the template value set
+            template_value_set.update_variable_value(var_name="hostname", value=template_value_set.hostname)
 
             db.session.add(template_value_set)
             db.session.commit()
 
-            if created:
-                flash("Template value set successful created", "success")
-                return redirect(url_for(
-                    "edit_template_value_set",
-                    template_value_set_id=template_value_set.id,
-                    config_template_id=parent_config_template.id
-                ))
-
-            else:
-                flash("Template value set template successful saved", "success")
-                return redirect(url_for(
-                    "view_config_template",
-                    project_id=parent_config_template.project.id,
-                    config_template_id=parent_config_template.id
-                ))
+            flash("Template Value Set successful saved", "success")
+            return redirect(url_for(
+                "view_config_template",
+                project_id=parent_config_template.project.id,
+                config_template_id=parent_config_template.id
+            ))
 
         except IntegrityError as ex:
             if "UNIQUE constraint failed" in str(ex):
-                msg = "name already exist, please use another one"
+                msg = "Template Value Set hostname already in use, please use another one"
 
             else:
-                msg = "Template Value set was not created (unknown error)"
+                msg = "Template Value Set was not created (unknown error)"
             flash(msg, "error")
             logger.error(msg, exc_info=True)
             db.session.rollback()
 
         except Exception:
-            msg = "Template Value set was not created (unknown error)"
+            msg = "Template Value Set was not created (unknown error)"
             logger.error(msg, exc_info=True)
             flash(msg, "error")
             db.session.rollback()
@@ -111,8 +145,10 @@ def edit_template_value_set(config_template_id, template_value_set_id=None):
     )
 
 
-@app.route(ROOT_URL + "project/template/<int:config_template_id>/valueset/<int:template_value_set_id>/delete", methods=["GET",
-                                                                                                                "POST"])
+@app.route(
+    ROOT_URL + "project/template/<int:config_template_id>/valueset/<int:template_value_set_id>/delete",
+    methods=["GET", "POST"]
+)
 def delete_template_value_set(config_template_id, template_value_set_id):
     """delete the Config Template
 

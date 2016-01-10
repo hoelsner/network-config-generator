@@ -13,7 +13,7 @@
     </ul>
 
     {% if projects|length == 0 %}
-        <p>No Projects found in database. <a href="{{  url_for("edit_project") }}" id="create_project">Create your first Project now.</a></p>
+        <p>No Projects found in database. <a href="{{  url_for("add_project") }}" id="create_project">Create your first Project now.</a></p>
     {% else %}
         {% include 'project/_projects_table.html' %}
     {% endif %}

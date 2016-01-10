@@ -31,32 +31,19 @@ def view_config_template(project_id, config_template_id):
 
 
 @app.route(ROOT_URL + "project/<int:project_id>/configtemplate/add", methods=["GET", "POST"])
-@app.route(ROOT_URL + "project/<int:project_id>/configtemplate/<int:config_template_id>/edit", methods=["GET", "POST"])
-def edit_config_template(project_id, config_template_id=None):
-    """edit/add a new Config Template
+def add_config_template(project_id):
+    """add a new Config Template
 
     :param project_id:
-    :param config_template_id:
     :return:
     """
     parent_project = Project.query.filter(Project.id == project_id).first_or_404()
-    if config_template_id:
-        config_template = ConfigTemplate.query.get(config_template_id)
 
-    else:
-        config_template = None
-
-    form = ConfigTemplateForm(request.form, config_template)
+    form = ConfigTemplateForm(request.form)
 
     if form.validate_on_submit():
         try:
-            created = False
-            if not config_template:
-                config_template = ConfigTemplate(name="", project=parent_project)
-                created = True
-
-            if form.template_content.data != config_template.template_content and (not created):
-                flash("Config Template content changed, all Template Value Sets are deleted.", "warning")
+            config_template = ConfigTemplate(name="", project=parent_project)
 
             config_template.name = form.name.data
             config_template.template_content = form.template_content.data
@@ -65,11 +52,7 @@ def edit_config_template(project_id, config_template_id=None):
             db.session.add(config_template)
             db.session.commit()
 
-            if created:
-                flash("Config template <strong>%s</strong> successful created" % config_template.name, "success")
-
-            else:
-                flash("Config template <strong>%s</strong> successful saved" % config_template.name, "success")
+            flash("Config template <strong>%s</strong> successful created" % config_template.name, "success")
 
             return redirect(
                 url_for(
@@ -81,7 +64,66 @@ def edit_config_template(project_id, config_template_id=None):
 
         except IntegrityError as ex:
             if "UNIQUE constraint failed" in str(ex):
-                msg = "name already exist, please use another one"
+                msg = "Config Template name already in use, please use another one"
+
+            else:
+                msg = "Config template was not created (unknown error, see log for details)"
+
+            logger.error(msg, exc_info=True)
+            flash(msg, "error")
+            db.session.rollback()
+
+        except Exception:
+            msg = "Config template was not created (unknown error, see log for details)"
+            logger.error(msg, exc_info=True)
+            flash(msg, "error")
+
+    return render_template(
+        "config_template/add_config_template.html",
+        project_id=project_id,
+        project=parent_project,
+        form=form
+    )
+
+
+@app.route(ROOT_URL + "project/<int:project_id>/configtemplate/<int:config_template_id>/edit", methods=["GET", "POST"])
+def edit_config_template(project_id, config_template_id):
+    """edit a Config Template
+
+    :param project_id:
+    :param config_template_id:
+    :return:
+    """
+    parent_project = Project.query.filter(Project.id == project_id).first_or_404()
+    config_template = ConfigTemplate.query.filter(ConfigTemplate.id == config_template_id).first_or_404()
+
+    form = ConfigTemplateForm(request.form, config_template)
+
+    if form.validate_on_submit():
+        try:
+            if form.template_content.data != config_template.template_content:
+                flash("Config Template content changed, all Template Value Sets are deleted.", "warning")
+
+            config_template.name = form.name.data
+            config_template.template_content = form.template_content.data
+            config_template.project = parent_project
+
+            db.session.add(config_template)
+            db.session.commit()
+
+            flash("Config template <strong>%s</strong> successful saved" % config_template.name, "success")
+
+            return redirect(
+                url_for(
+                    "view_config_template",
+                    project_id=project_id,
+                    config_template_id=config_template.id
+                )
+            )
+
+        except IntegrityError as ex:
+            if "UNIQUE constraint failed" in str(ex):
+                msg = "Config Template name already in use, please use another one"
 
             else:
                 msg = "Config template was not created (unknown error, see log for details)"
@@ -104,8 +146,10 @@ def edit_config_template(project_id, config_template_id=None):
     )
 
 
-@app.route(ROOT_URL + "project/<int:project_id>/configtemplate/<int:config_template_id>/edit_all", methods=["GET",
-                                                                                                            "POST"])
+@app.route(
+    ROOT_URL + "project/<int:project_id>/configtemplate/<int:config_template_id>/edit_all",
+    methods=["GET", "POST"]
+)
 def edit_all_config_template_values(project_id, config_template_id):
     """edit all Config Template Values based on a CSV textarea
 

@@ -29,7 +29,7 @@
     {% if project.configtemplates.all()|length == 0 %}
         <p>No Config Templates found in database.</p>
         <p>
-            <a href="{{  url_for("edit_config_template", project_id=project.id) }}" id="create_config_templates">
+            <a href="{{  url_for("add_config_template", project_id=project.id) }}" id="create_config_templates">
                 <span class="uk-icon-plus"></span>
                 Create the first Config Template here.
             </a>
@@ -38,7 +38,7 @@
         <table class="uk-table">
             <comment>The following Config Templates are defined within this Project.</comment>
             <caption class="uk-text-right">
-                <a href="{{  url_for("edit_config_template", project_id=project.id) }}" id="create_config_templates">
+                <a href="{{  url_for("add_config_template", project_id=project.id) }}" id="create_config_templates">
                     <span class="uk-icon-plus"></span>
                     add a Config Template
                 </a>

@@ -55,7 +55,7 @@ def edit_template_variable(config_template_id, template_variable_id):
 
         except IntegrityError as ex:
             if "UNIQUE constraint failed" in str(ex):
-                msg = "name already exist, please use another one"
+                msg = "Template variable name already in use, please use another one"
 
             else:
                 msg = "Template variable was not created (unknown error, see log for details)"

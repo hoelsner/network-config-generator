@@ -1,0 +1,18 @@
+<form method="POST" action="" class="uk-form uk-form-stacked">
+    {{ form.csrf_token }}
+
+    <div class="uk-form-row">
+        {{ form.name.label(class_="uk-form-label") }}
+        {% if form.name.errors %}
+            {{ form.name(class_="uk-form-controls uk-form-danger", size=40)|safe }}
+        {% else %}
+            {{ form.name(class_="uk-form-controls", size=40)|safe }}
+        {% endif %}
+        {% if form.name.errors %}
+            {% for error in form.name.errors %}<p class="uk-text-danger">{{ error }}</p>{% endfor %}
+        {% endif %}
+    </div>
+    <div class="uk-form-row">
+        <button id="submit" type="submit" value="save" class="uk-button uk-width-1-1 uk-button-success">save</button>
+    </div>
+</form>

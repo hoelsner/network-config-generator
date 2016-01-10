@@ -35,43 +35,28 @@ def view_project(project_id):
 
 
 @app.route(ROOT_URL + "project/add", methods=["GET", "POST"])
-@app.route(ROOT_URL + "project/<int:project_id>/edit", methods=["GET", "POST"])
-def edit_project(project_id=None):
-    """edit/add a new Project
+def add_project():
+    """add a new Project
 
-    :param project_id:
     :return:
     """
-    if project_id:
-        project = Project.query.get(project_id)
-
-    else:
-        project = None
-
-    form = ProjectForm(request.form, project)
+    form = ProjectForm(request.form)
 
     if form.validate_on_submit():
         try:
-            created = False
-            if not project:
-                project = Project(name="")
-                created = True
+            project = Project(name="")
 
             project.name = form.name.data
             db.session.add(project)
             db.session.commit()
 
-            if created:
-                flash("Project <strong>%s</strong> successful created" % project.name, "success")
-
-            else:
-                flash("Project <strong>%s</strong> successful saved" % project.name, "success")
+            flash("Project <strong>%s</strong> successful created" % project.name, "success")
 
             return redirect(url_for("view_project", project_id=project.id))
 
         except IntegrityError as ex:
             if "UNIQUE constraint failed" in str(ex):
-                msg = "name already exist, please use another one"
+                msg = "Project name already in use, please use another one"
 
             else:
                 msg = "Project was not created (unknown error, see log for details)"
@@ -82,6 +67,47 @@ def edit_project(project_id=None):
 
         except Exception:
             msg = "Project was not created (unknown error, see log for details)"
+            logger.error(msg, exc_info=True)
+            flash(msg, "error")
+            db.session.rollback()
+
+    return render_template("project/add_project.html", form=form)
+
+
+@app.route(ROOT_URL + "project/<int:project_id>/edit", methods=["GET", "POST"])
+def edit_project(project_id):
+    """edit a Project
+
+    :param project_id:
+    :return:
+    """
+    project = Project.query.get(project_id)
+
+    form = ProjectForm(request.form, project)
+
+    if form.validate_on_submit():
+        try:
+            project.name = form.name.data
+            db.session.add(project)
+            db.session.commit()
+
+            flash("Project <strong>%s</strong> successful saved" % project.name, "success")
+
+            return redirect(url_for("view_project", project_id=project.id))
+
+        except IntegrityError as ex:
+            if "UNIQUE constraint failed" in str(ex):
+                msg = "Project name already in use, please use another one"
+
+            else:
+                msg = "Project was not saved (unknown error, see log for details)"
+
+            flash(msg, "error")
+            logger.error(msg, exc_info=True)
+            db.session.rollback()
+
+        except Exception:
+            msg = "Project was not saved (unknown error, see log for details)"
             logger.error(msg, exc_info=True)
             flash(msg, "error")
             db.session.rollback()

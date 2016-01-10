@@ -14,7 +14,7 @@
             <td>{{ var.description }}</td>
             <td>
                 {% if var.var_name != "hostname" %}
-                    <a href="{{ url_for("edit_template_variable", config_template_id=config_template.id, template_variable_id=var.id) }}" id="edit_variable_{{ config_template.id }}" data-uk-tooltip title="edit variable">
+                    <a href="{{ url_for("edit_template_variable", config_template_id=config_template.id, template_variable_id=var.id) }}" id="edit_variable_{{ var.var_name }}" data-uk-tooltip title="edit variable">
                         <span class="uk-icon-edit"></span>
                     </a>
                 {% endif %}

@@ -2,43 +2,14 @@
 {% block title %}Edit Project{% endblock %}
 
 {% block content %}
-    {% if project %}
-        <h1><span class="uk-icon-folder"></span> Edit "{{ project.name }}"</h1>
-        <ul class="uk-subnav uk-subnav-line">
-            <li>
-                <a href="{{ url_for("view_project", project_id=project.id) }}" id="_back">
-                    <span class="uk-icon-arrow-left"></span> back
-                </a>
-            </li>
-        </ul>
-    {% else %}
-        <h1><span class="uk-icon-folder"></span> Add a new Project</h1>
-        <ul class="uk-subnav uk-subnav-line">
-            <li>
-                <a href="{{ url_for("view_all_projects") }}" id="_back">
-                    <span class="uk-icon-arrow-left"></span>
-                    back
-                </a>
-            </li>
-        </ul>
-    {% endif %}
+    <h1><span class="uk-icon-folder"></span> Edit "{{ project.name }}"</h1>
+    <ul class="uk-subnav uk-subnav-line">
+        <li>
+            <a href="{{ url_for("view_project", project_id=project.id) }}" id="_back">
+                <span class="uk-icon-arrow-left"></span> back
+            </a>
+        </li>
+    </ul>
 
-    <form method="POST" action="" class="uk-form uk-form-stacked">
-        {{ form.csrf_token }}
-
-        <div class="uk-form-row">
-            {{ form.name.label(class_="uk-form-label") }}
-            {% if form.name.errors %}
-                {{ form.name(class_="uk-form-controls uk-form-danger", size=40)|safe }}
-            {% else %}
-                {{ form.name(class_="uk-form-controls", size=40)|safe }}
-            {% endif %}
-            {% if form.name.errors %}
-                {% for error in form.name.errors %}<p class="uk-text-danger">{{ error }}</p>{% endfor %}
-            {% endif %}
-        </div>
-        <div class="uk-form-row">
-            <button id="submit" type="submit" value="save" class="uk-button uk-width-1-1 uk-button-success">save</button>
-        </div>
-    </form>
+    {% include 'project/_project_form.html' %}
 {% endblock %}
