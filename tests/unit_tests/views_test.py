@@ -128,7 +128,7 @@ class ProjectViewTest(BaseFlaskTest):
         }
 
         # add a new project
-        response = self.client.post(url_for("edit_project"), data=data, follow_redirects=True)
+        response = self.client.post(url_for("add_project"), data=data, follow_redirects=True)
 
         self.assert200(response)
         self.assertIn(project_name, response.data.decode("utf-8"))
@@ -162,7 +162,7 @@ class ProjectViewTest(BaseFlaskTest):
         self.assert200(response)
         self.assertTemplateUsed("project/edit_project.html")
         self.assertTrue(len(Project.query.all()) == 2)
-        self.assertIn("name already exist, please use another one", response.data.decode("utf-8"))
+        self.assertIn("Project name already in use, please use another one", response.data.decode("utf-8"))
 
         p = Project.query.filter(Project.name == project_name).first()
 
@@ -348,8 +348,8 @@ class ConfigTemplateViewTest(BaseFlaskTest):
             "template_content": config_template_content
         }
 
-        # add a new project
-        response = self.client.post(url_for("edit_config_template", project_id=p.id), data=data, follow_redirects=True)
+        # add a new config template
+        response = self.client.post(url_for("add_config_template", project_id=p.id), data=data, follow_redirects=True)
 
         self.assert200(response)
         self.assertIn(config_template_name, response.data.decode("utf-8"))
@@ -391,11 +391,11 @@ nothing (there is the error)
         }
 
         # add a new project
-        response = self.client.post(url_for("edit_config_template", project_id=p.id), data=data, follow_redirects=True)
+        response = self.client.post(url_for("add_config_template", project_id=p.id), data=data, follow_redirects=True)
 
         self.assert200(response)
         self.assertIn("Invalid template, please correct the following error: ", response.data.decode("utf-8"))
-        self.assertTemplateUsed("config_template/edit_config_template.html")
+        self.assertTemplateUsed("config_template/add_config_template.html")
         self.assertTrue(len(ConfigTemplate.query.all()) == 0)
 
     def test_edit_config_template(self):
@@ -434,7 +434,7 @@ nothing (there is the error)
         self.assert200(response)
         self.assertTemplateUsed("config_template/edit_config_template.html")
         self.assertTrue(len(ConfigTemplate.query.all()) == 2)
-        self.assertIn("name already exist, please use another one", response.data.decode("utf-8"))
+        self.assertIn("Config Template name already in use, please use another one", response.data.decode("utf-8"))
 
         ct1 = ConfigTemplate.query.filter(
                 (Project.id == p.id) and
@@ -1139,7 +1139,7 @@ class TemplateValueSetViewTest(BaseFlaskTest):
         # add a new template value set
         response = self.client.post(
             url_for(
-                "edit_template_value_set",
+                "add_template_value_set",
                 project_id=ct.project.id,
                 config_template_id=ct.id
             ),
@@ -1211,7 +1211,7 @@ class TemplateValueSetViewTest(BaseFlaskTest):
 
         self.assert200(response)
         self.assertTemplateUsed("template_value_set/edit_template_value_set.html")
-        self.assertIn("name already exist, please use another one", response.data.decode("utf-8"))
+        self.assertIn("Template Value Set hostname already in use, please use another one", response.data.decode("utf-8"))
         self.assertTrue(len(TemplateValueSet.query.all()) == 2)
 
         tvs1 = TemplateValueSet.query.filter(

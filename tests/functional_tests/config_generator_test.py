@@ -47,7 +47,7 @@ third_value ${ var_3 }
                                "second_value \nthird_value \n!\n!"
 
         # open the homepage
-        self.browser.get(self.get_server_url() + "/")
+        self.browser.get(self.get_server_url())
 
         # create the first project
         self.browser.find_element_by_id("create_project").click()
@@ -77,7 +77,7 @@ third_value ${ var_3 }
         self.browser.find_element_by_link_text("Create the first Template Value Set.").click()
         self.browser.find_element_by_id("hostname").send_keys(test_tvs1_hostname)
         self.browser.find_element_by_id("submit").click()
-        self.assertIn("Template value set successful created", self.browser.page_source)
+        self.assertIn("Template Value Set successful created", self.browser.page_source)
 
         # go back to the Config Template overview
         self.browser.find_element_by_id("_back").click()
@@ -97,7 +97,7 @@ third_value ${ var_3 }
         self.browser.find_element_by_id("submit").click()
 
         # verify result of the first configuration template value set in the detail view
-        self.assertIn("Template value set template successful saved", self.browser.page_source)
+        self.assertIn("Template Value Set successful saved", self.browser.page_source)
         self.browser.find_element_by_link_text(test_tvs1_hostname).click()
 
         content = self.browser.find_element_by_tag_name("body").text
@@ -114,7 +114,7 @@ third_value ${ var_3 }
         self.browser.find_element_by_id("create_template_value_set").click()
         self.browser.find_element_by_id("hostname").send_keys(test_tvs2_hostname)
         self.browser.find_element_by_id("submit").click()
-        self.assertIn("Template value set successful created", self.browser.page_source)
+        self.assertIn("Template Value Set successful created", self.browser.page_source)
 
         # go back to the Config Template overview
         self.browser.find_element_by_id("_back").click()
@@ -131,7 +131,7 @@ third_value ${ var_3 }
 
         # add a description to the second variable
         new_description = "description for the second variable"
-        self.browser.find_element_by_id("edit_variable_1").click()
+        self.browser.find_element_by_id("edit_variable_var_1").click()
         self.browser.find_element_by_id("description").send_keys(new_description)
         self.browser.find_element_by_id("submit").click()
 
@@ -191,9 +191,11 @@ third_value ${ var_3 }
         content = self.browser.find_element_by_tag_name("body").text
         self.assertIn('Edit "%s"' % test_config_template_name, content)
         self.assertIn(test_config_template_content, content)
+        time.sleep(1)
         self.browser.find_element_by_id("template_content").clear()
         self.browser.find_element_by_id("template_content").send_keys(test_config_template_content_changed)
         self.browser.find_element_by_id("submit").click()
+        time.sleep(1)
 
         # verify, that all template_value sets are deleted
         content = self.browser.find_element_by_tag_name("body").text
@@ -203,7 +205,7 @@ third_value ${ var_3 }
         self.browser.find_element_by_id("create_template_value_set").click()
         self.browser.find_element_by_id("hostname").send_keys(test_tvs1_hostname)
         self.browser.find_element_by_id("submit").click()
-        self.assertIn("Template value set successful created", self.browser.page_source)
+        self.assertIn("Template Value Set successful created", self.browser.page_source)
 
         # go back to the Config Template overview
         self.browser.find_element_by_id("_back").click()
@@ -212,7 +214,7 @@ third_value ${ var_3 }
         self.browser.find_element_by_id("hostname").send_keys(test_tvs2_hostname)
         self.browser.find_element_by_id("submit").click()
         content = self.browser.find_element_by_tag_name("body").text
-        self.assertIn("Template value set successful created", content)
+        self.assertIn("Template Value Set successful created", content)
 
         # go back to the Config Template overview
         self.browser.find_element_by_id("_back").click()
@@ -240,3 +242,13 @@ third_value ${ var_3 }
             self.browser.page_source
         )
         self.assertIn("There are no Template Value Sets defined.", content)
+
+        # go back to the overview and drop the project
+        self.browser.find_element_by_id("_back").click()
+        self.browser.find_element_by_id("_back").click()
+        self.browser.find_element_by_id("delete_project_1").click()
+        self.browser.find_element_by_id("submit").click()
+
+        # verify that there are no projects in the database
+        content = self.browser.find_element_by_tag_name("body").text
+        self.assertIn("No Projects found in database.", content)
