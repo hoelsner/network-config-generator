@@ -62,8 +62,9 @@ target/
 [Bb]in
 [Ii]nclude
 [Ll]ib
-[Ss]cripts
 pyvenv.cfg
 pip-selfcheck.json
 *.db
 /_*
+venv
+network_config_generator.key
