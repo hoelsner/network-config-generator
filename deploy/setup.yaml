@@ -50,6 +50,17 @@
       regexp='SECRET_KEY_CONTENT'
       replace='{{ lookup('file', '/var/www/network_config_generator/network_config_generator.key') }}'
 
+  #- name: create gunicorn service (systemd)
+  #  copy:
+  #    src=templates/gunicorn.template.service
+  #    dest=/etc/systemd/system/gunicorn-network_config_generator.service
+  #- name: set secret key on gunicorn configuration
+  #  replace:
+  #    dest=/etc/systemd/system/gunicorn-network_config_generator.service
+  #    regexp='SECRET_KEY_CONTENT'
+  #    replace='{{ lookup('file', '/var/www/network_config_generator/network_config_generator.key') }}'
+
+
   # configure nginx site
   - name: delete nginx default configuration
     file:

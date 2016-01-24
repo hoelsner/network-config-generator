@@ -1,0 +1,15 @@
+[Unit]
+Description=gunicorn for the Network Config Generator
+After=network.target
+After=nginx.service
+
+[Service]
+User=ncg
+Group=ncg
+WorkingDirectory=/var/www/network_config_generator
+Environment="APP_SETTINGS=config.ProductionConfig"
+Environment="APP_SECRET_KEY=SECRET_KEY_CONTENT"
+ExecStart=/var/www/network_config_generator/venv/bin/gunicorn --workers 4 --bind unix:/tmp/network_config_generator.socket --access-logfile log/gunicorn_access.log --error-logfile log/gunicorn_error.log --timeout 600 app:app
+
+[Install]
+WantedBy=multi-user.target
