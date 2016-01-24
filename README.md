@@ -60,14 +60,14 @@ Follow the instructions from the setup script.
 
 To run an instance on your local machine (for demo or testing), you need the following steps:
  
-1. clone the repository
+#### 1. clone the repository
 
 ```Shell
 $ git clone https://github.com/hoelsner/network-config-generator.git network_config_generator
 $ cd network_config_generator
 ```
 
-2. create a virtualenv and install python dependencies
+#### 2. create a virtualenv and install python dependencies
 
 ```Shell
 $ virtualenv -p /usr/bin/python3 venv
@@ -75,7 +75,7 @@ $ source venv/bin/activate
 (venv) $ pip install -r requirements.txt
 ```
 
-3. run the local server
+#### 3. run the local server
 
 ```Shell
 (venv) $ python3 run_local.py
