@@ -1,0 +1,80 @@
+---
+# This playbook install and configures a TFTP and FTP server for the Network Configuration Generator on the server
+- hosts: localhost
+  gather_facts: False
+  sudo: yes
+
+  tasks:
+  - name: install atftp server and client (for testing)
+    apt: pkg={{ item }} state=installed
+    with_items:
+     - atftpd
+     - atftp
+     - vsftpd
+  - name: create tftp root directory
+    sudo: true
+    file:
+      path=/srv/tftp
+      state=directory
+      mode=0777
+      owner=ncg
+      group=ncg
+  - name: copy vsftpd configuration
+    sudo: true
+    copy:
+      src=templates/vsftpd.template.conf
+      dest=/etc/vsftpd.conf
+  - name: stop inetutils
+    sudo: true
+    shell: /etc/init.d/inetutils-inetd stop
+  - name: verify that inetd is not used with atftpd
+    sudo: true
+    lineinfile: dest=/etc/default/atftpd regexp='USE_INETD=true' line='USE_INETD=false'
+  - name: generate key file for the FTP user
+    shell: venv/bin/python3 deploy/scripts/create_key_file.py ftp_user.key 6
+    sudo_user: ncg
+    args:
+      creates: ftp_user.key
+      chdir: /var/www/network_config_generator/
+  - name: create FTP user
+    user:
+      name=ftpuser
+      password={{ lookup('file', '/var/www/network_config_generator/ftp_user.key')|password_hash('sha512') }}
+      group=ncg
+      comment="Network Configuration Generator FTP user"
+      home=/srv/ftp
+  - name: create tftp root directory
+    sudo: true
+    file:
+      path=/srv/ftp
+      state=directory
+      mode=0777
+      owner=ftpuser
+      group=ncg
+  - name: start inetutils
+    sudo: true
+    shell: /etc/init.d/inetutils-inetd start
+  - name: start aftpd service
+    service: name=atftpd state=restarted enabled=yes
+    sudo: true
+  - name: start vsftpd service
+    service: name=vsftpd state=restarted enabled=yes
+    sudo: true
+
+  # create FTP and TFTP test files
+  - name: create test files
+    sudo: true
+    file: path={{ item }} state=touch mode=0666
+    with_items:
+      - "/srv/ftp/FTP_DIRECTORY"
+      - "/srv/tftp/TFTP_DIRECTORY"
+  - name: create content for test files
+    sudo: true
+    lineinfile: dest={{ item }} line='sample content'
+    with_items:
+      - "/srv/ftp/FTP_DIRECTORY"
+      - "/srv/tftp/TFTP_DIRECTORY"
+
+  # print some debug information
+  - name: FTP user account
+    debug: msg="ftpuser/{{ lookup('file', '/var/www/network_config_generator/ftp_user.key') }}"

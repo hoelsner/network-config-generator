@@ -21,7 +21,12 @@ else
     sudo -u ncg cp -r /vagrant/* ${source_dir}
 fi
 
+# remove development files (key and database)
+sudo rm /var/www/network_config_generator/network_config_generator.key
+sudo rm /var/www/network_config_generator/*.db
+
 echo "stage the Network Configuration Generator Web service..."
 cd ${source_dir}
 
 ansible-playbook -i 'localhost,' -c local deploy/setup.yaml
+ansible-playbook -i 'localhost,' -c local deploy/setup_local_services.yaml

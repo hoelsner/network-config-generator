@@ -23,6 +23,9 @@ class DefaultConfig(object):
     WTF_CSRF_ENABLED = True
     SECRET_KEY = 'just-for-development'
 
+    TFTP_DIRECTORY = os.path.join(APP_BASE_DIR, "share", "tftp")
+    FTP_DIRECTORY = os.path.join(APP_BASE_DIR, "share", "ftp")
+
 
 class ProductionConfig(DefaultConfig):
     """
@@ -31,6 +34,9 @@ class ProductionConfig(DefaultConfig):
     SECRET_KEY = os.getenv('APP_SECRET_KEY', "not set")
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(APP_BASE_DIR, 'production.db')
     PRODUCTION = True
+
+    TFTP_DIRECTORY = os.path.join("srv", "tftp")
+    FTP_DIRECTORY = os.path.join("srv", "ftp")
 
 
 class TestConfig(DefaultConfig):
