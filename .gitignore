@@ -67,4 +67,8 @@ pip-selfcheck.json
 *.db
 /_*
 venv
+/log
 network_config_generator.key
+ftp_user.key
+dump.rdb
+/share
