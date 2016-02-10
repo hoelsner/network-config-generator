@@ -19,11 +19,12 @@ else
     sudo chown ncg ${source_dir}
     sudo chgrp ncg ${source_dir}
     sudo -u ncg cp -r /vagrant/* ${source_dir}
+    # cleanup for initial setup
+    sudo rm /var/www/network_config_generator/network_config_generator.key
+    sudo rm /var/www/network_config_generator/ftp_user.key
+    sudo rm /var/www/network_config_generator/log/application.log
+    sudo rm /var/www/network_config_generator/*.db
 fi
-
-# remove development files (key and database)
-sudo rm /var/www/network_config_generator/network_config_generator.key
-sudo rm /var/www/network_config_generator/*.db
 
 echo "stage the Network Configuration Generator Web service..."
 cd ${source_dir}

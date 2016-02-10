@@ -18,6 +18,7 @@
     - python3-dev
     - python-virtualenv
     - nginx
+    - redis-server
 
   # setup python environment for site
   - name: create virtualenv
@@ -60,6 +61,16 @@
   #    regexp='SECRET_KEY_CONTENT'
   #    replace='{{ lookup('file', '/var/www/network_config_generator/network_config_generator.key') }}'
 
+  # configure celery worker
+  - name: create celery_worker service
+    copy:
+      src=templates/celery_worker.template.conf
+      dest=/etc/init/worker-network_config_generator.conf
+  - name: set secret key on celery_worker configuration
+    replace:
+      dest=/etc/init/worker-network_config_generator.conf
+      regexp='SECRET_KEY_CONTENT'
+      replace='{{ lookup('file', '/var/www/network_config_generator/network_config_generator.key') }}'
 
   # configure nginx site
   - name: delete nginx default configuration
@@ -88,4 +99,7 @@
     sudo: true
   - name: restart gunicorn service
     service: name=gunicorn-network_config_generator state=restarted enabled=yes
+    sudo: true
+  - name: restart celery worker service
+    service: name=worker-network_config_generator state=restarted enabled=yes
     sudo: true

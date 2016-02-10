@@ -1,9 +1,11 @@
 """
 basic view tests for the Flask application
 """
+import json
+
 from flask import url_for
 from app import db
-from app.models import Project, ConfigTemplate, TemplateValueSet, TemplateValue, TemplateVariable
+from app.models import Project, ConfigTemplate, TemplateValueSet, TemplateVariable
 from tests import BaseFlaskTest
 
 
@@ -41,6 +43,28 @@ class CommonSiteTest(BaseFlaskTest):
         """
         response = self.client.get(url_for("template_syntax"))
         self.assert200(response)
+
+    def test_verify_appliance_status(self):
+        """
+        just a simple test to avoid an error when accessing the appliance status page
+        :return:
+        """
+        response = self.client.get(url_for("appliance_status"))
+        self.assert200(response)
+
+    def test_appliance_status_json(self):
+        """
+        test the json response of the appliance status Ajax endpoint
+        :return:
+        """
+        response = self.client.get(url_for("appliance_status_json"))
+        self.assert200(response)
+
+        content = json.loads(response.data.decode("utf-8"))
+        self.assertTrue("ftp" in content.keys())
+        self.assertTrue("tftp" in content.keys())
+        self.assertTrue("redis" in content.keys())
+        self.assertTrue("celery_worker" in content.keys())
 
 
 class ProjectViewTest(BaseFlaskTest):
@@ -1463,4 +1487,3 @@ class ConfigurationViewTest(BaseFlaskTest):
         )
         self.assert200(response)
         # the content is validated within a functional test case
-

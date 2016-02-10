@@ -81,6 +81,7 @@
             {% block full_size_content %}{% endblock %}
         </div>
     </div>
+    {% block footer_javascript %}{% endblock %}
     <script type="application/javascript">
     $(document).ready(function() {
     {% with messages = get_flashed_messages(with_categories=true) %}

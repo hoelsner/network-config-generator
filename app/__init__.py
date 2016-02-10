@@ -1,5 +1,6 @@
 import logging
 import os
+from celery import Celery
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 from werkzeug.contrib.fixers import ProxyFix
@@ -37,9 +38,27 @@ logging.getLogger().info("use %s configuration" % config_class)
 app = Flask(__name__, static_url_path=STATIC_URL_PATH)
 app.config.from_object(config_class)
 db = SQLAlchemy(app)
+# setup the celery client
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
 
 if app.config.get("SECRET_KEY") == "":
     logging.getLogger().error("Secret key not set!")
+
+# verify that the FTP and TFTP directories exist
+if not os.path.exists(app.config["TFTP_DIRECTORY"]):
+    logging.getLogger().info("create TFTP directory at %s" % app.config["TFTP_DIRECTORY"])
+    os.makedirs(app.config["TFTP_DIRECTORY"])
+
+else:
+    logging.getLogger().info("set TFTP directory to %s" % app.config["TFTP_DIRECTORY"])
+
+if not os.path.exists(app.config["FTP_DIRECTORY"]):
+    logging.getLogger().info("create TFTP directory at %s" % app.config["FTP_DIRECTORY"])
+    os.makedirs(app.config["FTP_DIRECTORY"])
+
+else:
+    logging.getLogger().info("set FTP directory to %s" % app.config["FTP_DIRECTORY"])
 
 # required for gunicorn
 app.wsgi_app = ProxyFix(app.wsgi_app)

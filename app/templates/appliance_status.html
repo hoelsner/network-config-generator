@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Appliance Status{% endblock %}
+
+{% block content %}
+    <h1><span class="uk-icon-dashboard"></span> Appliance Status</h1>
+
+    <p class="uk-text-primary">
+        The following table shows the state of other services on the server, that are used within this application.
+    </p>
+
+    <table class="uk-table" id="task_table">
+        <thead>
+            <tr>
+                <th style="width: 200px;">name</th>
+                <th>description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span id="ftp_state" class="uk-icon-spin uk-icon-spinner"></span> FTP server</td>
+                <td>used to provide configurations via the local FTP server</td>
+            </tr>
+            <tr>
+                <td><span id="tftp_state" class="uk-icon-spin uk-icon-spinner"></span> TFTP server</td>
+                <td>used to provide configurations via the local TFTP server</td>
+            </tr>
+            <tr>
+                <td><span id="redis_state" class="uk-icon-spin uk-icon-spinner"></span> redis server</td>
+                <td>required for the task engine</td>
+            </tr>
+            <tr>
+                <td><span id="celery_worker_state" class="uk-icon-spin uk-icon-spinner"></span> local celery worker</td>
+                <td>worker thread for the celery task engine, required for any asynchronous task (e.g. provide
+                    configurations to TFTP/FTP service)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Server IP interfaces</h2>
+
+    <p>The following table contains all interfaces and IP addresses of the appliance.</p>
+    <table class="uk-table" id="ip_table">
+        <thead>
+            <tr>
+                <th>interface</th>
+                <th>IPv4 address</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for interface_name in ip_addresses.keys() %}
+            <tr>
+                <td>{{ interface_name }}</td>
+                {% for ip in ip_addresses[interface_name] %}
+                    <td>{{ ip }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Simple Test for the Task Engine</h2>
+    <p>The following form will add both numbers using the asynchronous task engine:</p>
+
+    <input type="text" name="a" id="form_a"> +
+    <input type="text" name="b" id="form_b">
+    <button id="start-job" type="button">sum</button>
+    <div id="progress" class="uk-text-large uk-text-primary"></div>
+
+{% endblock %}
+
+{% block footer_javascript %}
+    <script type="application/javascript">
+    $(window).load(function() {
+        $.ajaxSetup({
+            error: CustomError
+        });
+
+        $.ajax({
+            url: "{{ url_for('appliance_status_json') }}",
+            data: {
+                format: 'json'
+            }
+        })
+        .done(function( msg ) {
+            process_result(msg['ftp'], $('#ftp_state'));
+            process_result(msg['tftp'], $('#tftp_state'));
+            process_result(msg['celery_worker'], $('#celery_worker_state'));
+            process_result(msg['redis'], $('#redis_state'));
+        });
+    } );
+
+    function start_calulation_task() {
+        // add task status elements
+        $('#progress').text("calculating");
+
+        // send ajax POST request to start background job
+        $.ajax({
+            type: 'POST',
+            data: {
+                "a": $("#form_a").val(),
+                "b": $("#form_b").val(),
+                "csrf_token": "{{ csrf_token }}"
+            },
+            url: '{{ url_for("debug_calculate_task") }}',
+            success: function(data, status, request) {
+                status_url = request.getResponseHeader('Location');
+                update_progress(status_url);
+            },
+            error: function() {
+                alert('Unexpected error');
+            }
+        });
+    }
+    function update_progress(status_url) {
+        // send GET request to status URL
+        $.getJSON(status_url, function(data) {
+            // update UI
+
+            if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
+                if ('result' in data) {
+                    // show result
+                    $("#progress").text("Sum: "+ data["result"]);
+                }
+                else {
+                    // something unexpected happened
+                    $("#progress").text("Failed: "+ data["status"]);
+                }
+            }
+            else {
+                // rerun in 2 seconds
+                setTimeout(function() {
+                    update_progress(status_url);
+                }, 1000);
+            }
+        });
+    }
+
+    $(function() {
+        $("#start-job").click(start_calulation_task);
+    });
+
+    function process_result(result, element) {
+        element.removeClass("uk-icon-spinner");
+        element.removeClass("uk-icon-spin");
+        if (result) {
+            element.addClass("uk-icon-thumbs-up");
+            element.css("color", "green")
+        }
+        else {
+            element.addClass("uk-icon-thumbs-down");
+            element.css("color", "red")
+        }
+    }
+
+    function CustomError(x, e) {
+        if (x.status == 400) {
+            alert('Bad request, please reload page.');
+        }
+        else if (x.status == 404) {
+            alert('Requested resource not found on server.');
+        }
+        else if (x.status == 500) {
+            alert('Cannot fetch service state: Internal Server Error.');
+        }
+    }
+    </script>
+{% endblock %}

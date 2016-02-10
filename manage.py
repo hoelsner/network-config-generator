@@ -15,6 +15,7 @@ manager.add_command('runserver', Server(
     use_debugger=os.getenv('DEBUG_MODE', True),
     use_reloader=os.getenv('FLASK_RELOADER', True),
     host=os.getenv("FLASK_IP", "0.0.0.0"),
+    threaded=True,
     port=int(os.getenv("FLASK_PORT", 5000))
 ))
 
