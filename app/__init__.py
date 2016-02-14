@@ -48,14 +48,21 @@ if app.config.get("SECRET_KEY") == "":
 # verify that the FTP and TFTP directories exist
 if not os.path.exists(app.config["TFTP_DIRECTORY"]):
     logging.getLogger().info("create TFTP directory at %s" % app.config["TFTP_DIRECTORY"])
-    os.makedirs(app.config["TFTP_DIRECTORY"])
+    try:
+        os.makedirs(app.config["TFTP_DIRECTORY"])
+
+    except:
+        logging.getLogger().error("unable to create TFTP directory on server, TFTP might not work", exc_info=True)
 
 else:
     logging.getLogger().info("set TFTP directory to %s" % app.config["TFTP_DIRECTORY"])
 
 if not os.path.exists(app.config["FTP_DIRECTORY"]):
     logging.getLogger().info("create TFTP directory at %s" % app.config["FTP_DIRECTORY"])
-    os.makedirs(app.config["FTP_DIRECTORY"])
+    try:
+        os.makedirs(app.config["FTP_DIRECTORY"])
+    except:
+        logging.getLogger().error("unable to create FTP directory on server, FTP might not work", exc_info=True)
 
 else:
     logging.getLogger().info("set FTP directory to %s" % app.config["FTP_DIRECTORY"])

@@ -39,11 +39,10 @@ class ProductionConfig(DefaultConfig):
     configuration for production deployments
     """
     SECRET_KEY = os.getenv('APP_SECRET_KEY', "not set")
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(APP_BASE_DIR, 'production.db')
     PRODUCTION = True
 
-    TFTP_DIRECTORY = os.path.join("srv", "tftp")
-    FTP_DIRECTORY = os.path.join("srv", "ftp")
+    TFTP_DIRECTORY = os.path.join("/srv", "tftp")
+    FTP_DIRECTORY = os.path.join("/srv", "ftp")
 
 
 class TestConfig(DefaultConfig):
@@ -58,6 +57,6 @@ class LiveServerTestConfig(DefaultConfig):
     """
     configuration for Live Server tests
     """
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(APP_BASE_DIR, 'app_livetest.db')
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(APP_BASE_DIR, 'app_test.db')
     LIVESERVER_PORT = 11111
     TESTING = True
