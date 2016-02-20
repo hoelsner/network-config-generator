@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Export Configurations{% endblock %}
+
+{% block content %}
+    <h1><span class="uk-icon-file"></span> Export configurations for "{{ config_template.name }}"</h1>
+    <ul class="uk-subnav uk-subnav-line">
+        <li>
+            <a href="{{  url_for("view_config_template", project_id=config_template.project.id, config_template_id=config_template.id) }}" id="_back">
+                <span class="uk-icon-arrow-left"></span> back
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for("download_all_config_as_zip", project_id=project.id, config_template_id=config_template.id) }}" id="download_all_configurations">
+                <span class="uk-icon-download"></span> download all configurations (ZIP-archive)
+            </a>
+        </li>
+    </ul>
+
+{% if not appliance_status.celery_worker %}
+    <div class="uk-alert uk-alert-danger">
+        <strong>No worker thread found on the appliance</strong>, export features disabled.
+    </div>
+{% else %}
+    {% if not appliance_status.ftp %}
+        <div class="uk-alert uk-alert-warning">
+            <strong>No FTP service running on the server</strong>, exported files are not accessible!
+        </div>
+    {% endif %}
+    {% if not appliance_status.tftp %}
+        <div class="uk-alert uk-alert-warning">
+            <strong>No TFTP service running on the server</strong>, exported files are not accessible!
+        </div>
+    {% endif %}
+
+    <table class="uk-table">
+        <thead>
+            <tr>
+                <th>service</th>
+                <th>last export</th>
+                <th>username/password</th>
+                <th width="150px"></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>local FTP server</td>
+                {% if config_template.last_successful_ftp_export %}
+                    <td id="FTP_time">{{ config_template.last_successful_ftp_export.strftime('%Y/%m/%d %H:%M') }}</td>
+                {% else %}
+                    <td id="FTP_time">never</td>
+                {% endif %}
+                <td><code>ftpuser/{{ ftp_password }}</code></td>
+                <td style="text-align: right">
+                    <button id="refresh_ftp" class="uk-button" {% if not appliance_status.celery_worker %}disabled{% endif %}>
+                        <span id="refresh_ftp_icon" class="uk-icon-refresh"></span>
+                        <span id="refresh_ftp_text">refresh configs</span>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td>local TFTP server</td>
+                {% if config_template.last_successful_tftp_export %}
+                    <td id="TFTP_time">{{ config_template.last_successful_tftp_export.strftime('%Y/%m/%d %H:%M') }}</td>
+                {% else %}
+                    <td id="TFTP_time">never</td>
+                {% endif %}
+                <td><code>----</code></td>
+                <td style="text-align: right">
+                    <button id="refresh_tftp" class="uk-button" {% if not appliance_status.celery_worker %}disabled{% endif %}>
+                        <span id="refresh_tftp_icon" class="uk-icon-refresh"></span>
+                        <span id="refresh_tftp_text">refresh configs</span>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>You can use the following <strong>Cisco IOS commands</strong> to copy the configurations from the local TFTP/FTP server:</p>
+    {% for interface_name in ip_addresses.keys() %}
+        <ul>
+            <li>on interface <strong>{{ interface_name }}</strong>:
+            {% for ip in ip_addresses[interface_name] %}
+                <ul>
+                    <li><code>copy ftp://ftpuser:{{ ftp_password }}@{{ ip }}/{{ config_template.project.name_slug }}/{{ config_template.name_slug }}/</code></li>
+                    <li><code>copy tftp://{{ ip }}/{{ config_template.project.name_slug }}/{{ config_template.name_slug }}/</code></li>
+                </ul>
+            {% endfor %}
+            </li>
+        </ul>
+    {% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block footer_javascript %}
+    <script type="application/javascript">
+    /*
+     * FTP refresh config task
+     */
+    function start_ftp_refresh_task() {
+        var btn = $('#refresh_ftp');
+        var btn_icon = $('#refresh_ftp_icon');
+        var btn_text = $('#refresh_ftp_text');
+        var url = '{{ url_for("update_local_ftp_config_task", config_template_id=config_template.id) }}';
+        var csrf_token = "{{ csrf_token }}";
+        start_export_task(btn, btn_icon, btn_text, url, csrf_token, "FTP")
+    }
+
+    /*
+     * TFTP refresh config task
+     */
+    function start_tftp_refresh_task() {
+        var btn = $('#refresh_tftp');
+        var btn_icon = $('#refresh_tftp_icon');
+        var btn_text = $('#refresh_tftp_text');
+        var url = '{{ url_for("update_local_tftp_config_task", config_template_id=config_template.id) }}';
+        var csrf_token = "{{ csrf_token }}";
+        start_export_task(btn, btn_icon, btn_text, url, csrf_token, "TFTP")
+    }
+
+    /*
+     * start an export task
+     */
+    function start_export_task(btn, btn_icon, btn_text, url, csrf_token, service) {
+        // add task status elements
+        btn_text.text("processing");
+        btn.prop("disabled", true);
+        btn_icon.addClass("uk-icon-spin");
+
+        // send ajax POST request to start background job
+        $.ajax({
+            type: 'POST',
+            data: {
+                "csrf_token": csrf_token
+            },
+            url: url,
+            success: function(data, status, request) {
+                var status_url = request.getResponseHeader('Location');
+                console.log(status_url);
+                update_progress(status_url, btn, btn_text, btn_icon, service);
+            },
+            error: function() {
+                alert('Unexpected error');
+            }
+        });
+    }
+
+    /*
+     * Update progress in the user interface
+     */
+    function update_progress(status_url, btn, btn_text, btn_icon, service) {
+        // send GET request to status URL
+        $.getJSON(status_url, function(data) {
+            // update UI
+            if (data['state'] != 'PENDING') {
+                if ('error' in data) {
+                    // something unexpected happened
+                    UIkit.notify({
+                        message : "Update of local " + service + " configurations failed: "+ data["error"],
+                        status  : 'danger',
+                        timeout : 0,
+                        pos     : 'top-center'
+                    });
+                }
+                else {
+                    if (data['state'] != "FAILURE") {
+                        UIkit.notify({
+                            message: "Local " + service + " configuration files successful updated.",
+                            status: 'success',
+                            timeout: 2000,
+                            pos: 'top-center'
+                        });
+                        $('#' + service + '_time').text(data["data"]["timestamp"]);
+                    }
+                    else {
+                        UIkit.notify({
+                            message: "Task execution failed, please check your server configuration",
+                            status: 'danger',
+                            timeout: 0,
+                            pos: 'top-center'
+                        });
+                    }
+                }
+                btn_text.text("refresh configs");
+                btn_icon.removeClass("uk-icon-spin");
+                btn.prop("disabled", false);
+            }
+            else {
+                // rerun in 1 second
+                setTimeout(function() {
+                    update_progress(status_url, btn, btn_text, btn_icon, service);
+                }, 2000);
+            }
+        });
+    }
+
+    /*
+     * register actions for buttons
+     */
+    $(function() {
+        $("#refresh_ftp").click(start_ftp_refresh_task);
+        $("#refresh_tftp").click(start_tftp_refresh_task);
+    });
+    </script>
+{% endblock %}

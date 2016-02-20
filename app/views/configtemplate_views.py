@@ -4,11 +4,14 @@ views for the Config Template data object
 import csv
 import logging
 import io
-from flask import render_template, url_for, redirect, request, flash
+from flask import render_template, url_for, redirect, request, flash, jsonify
 from sqlalchemy.exc import IntegrityError
 from app import app, db
 from app.models import ConfigTemplate, Project, TemplateValueSet
 from app.forms import ConfigTemplateForm, EditConfigTemplateValuesForm
+from app.utils.appliance import get_local_ip_addresses, verify_appliance_status
+from app.utils.export import get_appliance_ftp_password
+from app.tasks import update_local_ftp_configurations, update_local_tftp_configurations
 from config import ROOT_URL
 
 logger = logging.getLogger()
@@ -258,4 +261,26 @@ def delete_config_template(project_id, config_template_id):
         "config_template/delete_config_template.html",
         project_id=project_id,
         config_template=config_template
+    )
+
+
+@app.route(ROOT_URL + "project/<int:project_id>/template/<int:config_template_id>/export")
+def export_configurations(project_id, config_template_id):
+    """
+    Export the configuration to various locations
+    :param project_id:
+    :param config_template_id:
+    :return:
+    """
+    project = Project.query.filter(Project.id == project_id).first_or_404()
+    config_template = ConfigTemplate.query.filter(ConfigTemplate.id == config_template_id).first_or_404()
+
+    return render_template(
+        "config_template/export_configurations.html",
+        project_id=project_id,
+        project=project,
+        config_template=config_template,
+        ftp_password=get_appliance_ftp_password(),
+        ip_addresses=get_local_ip_addresses(),
+        appliance_status=verify_appliance_status()
     )

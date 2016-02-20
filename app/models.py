@@ -281,6 +281,12 @@ class ConfigTemplate(db.Model):
     project = db.relationship('Project', backref=db.backref('configtemplates',
                                                             cascade="all, delete-orphan",
                                                             lazy='dynamic'))
+    last_successful_ftp_export = db.Column(db.DateTime)
+    last_successful_tftp_export = db.Column(db.DateTime)
+
+    @property
+    def name_slug(self):
+        return slugify(self.name)
 
     @property
     def template_content(self):
@@ -449,6 +455,10 @@ class Project(db.Model):
         unique=True,
         nullable=False
     )
+
+    @property
+    def name_slug(self):
+        return slugify(self.name)
 
     def __init__(self, name):
         self.name = name

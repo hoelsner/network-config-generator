@@ -11,14 +11,14 @@
     <table class="uk-table" id="task_table">
         <thead>
             <tr>
-                <th style="width: 200px;">name</th>
+                <th style="width: 160px;">name</th>
                 <th>description</th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td><span id="ftp_state" class="uk-icon-spin uk-icon-spinner"></span> FTP server</td>
-                <td>used to provide configurations via the local FTP server</td>
+                <td>used to provide configurations via the local FTP server (username <code>ftpuser</code> and password <code>{{ ftp_password }}</code>)</td>
             </tr>
             <tr>
                 <td><span id="tftp_state" class="uk-icon-spin uk-icon-spinner"></span> TFTP server</td>
@@ -104,6 +104,7 @@
             url: '{{ url_for("debug_calculate_task") }}',
             success: function(data, status, request) {
                 status_url = request.getResponseHeader('Location');
+                console.log(status_url)
                 update_progress(status_url);
             },
             error: function() {
@@ -115,7 +116,6 @@
         // send GET request to status URL
         $.getJSON(status_url, function(data) {
             // update UI
-
             if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
                 if ('result' in data) {
                     // show result

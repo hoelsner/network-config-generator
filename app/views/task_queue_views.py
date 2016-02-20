@@ -24,6 +24,9 @@ def task_status_json(task_id):
             'state': task.state,
             'status': task.info.get('status', '')
         }
+        if 'error' in task.info:
+            response['error'] = task.info['error']
+
         if 'result' in task.info:
             response['result'] = task.info['result']
     else:
@@ -32,4 +35,6 @@ def task_status_json(task_id):
             'state': task.state,
             'status': str(task.info),  # this is the exception raised
         }
+    # update the response with the result of the task
+    response["data"] = task.info
     return jsonify(response)

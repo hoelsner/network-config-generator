@@ -2,9 +2,14 @@
 basic view tests for the Flask application
 """
 import json
+import os
+import shutil
 
+import time
 from flask import url_for
-from app import db
+from slugify import slugify
+
+from app import db, app
 from app.models import Project, ConfigTemplate, TemplateValueSet, TemplateVariable
 from tests import BaseFlaskTest
 
@@ -1047,6 +1052,37 @@ nothing (there is the error)
         self.assertEqual(received_tvs5.get_template_value_by_name_as_string("variable_two"), "55")
         self.assertEqual(received_tvs5.get_template_value_by_name_as_string("variable_three"), "555")
 
+    def test_export_configurations_view(self):
+        """simple test to avoid errors in the view
+
+        :return:
+        """
+        project_name = "project name"
+        ct_name = "template name"
+        ct_content = "template content:\n${variable_one}\n${variable_two}\n${variable_three}"
+        tvs_csv = "hostname;variable_one;variable_two;variable_three;additional_var\n" \
+                  "host_A;1;11;111\n" \
+                  "host_B;2;22;222\n" \
+                  "host_C;3;33;333\n"
+        p = Project(project_name)
+        db.session.add(p)
+
+        ct1 = ConfigTemplate(name=ct_name, template_content=ct_content, project=p)
+        tvs1 = TemplateValueSet(hostname="host_A", config_template=ct1)
+        tvs2 = TemplateValueSet(hostname="host_B", config_template=ct1)
+        tvs3 = TemplateValueSet(hostname="host_C", config_template=ct1)
+        db.session.add_all([ct1, tvs1, tvs2, tvs3])
+        db.session.commit()
+
+        response = self.client.get(
+            url_for(
+                "export_configurations",
+                project_id=ct1.project.id,
+                config_template_id=ct1.id
+            )
+        )
+        self.assert200(response)
+
 
 class TemplateValueSetViewTest(BaseFlaskTest):
 
@@ -1487,3 +1523,137 @@ class ConfigurationViewTest(BaseFlaskTest):
         )
         self.assert200(response)
         # the content is validated within a functional test case
+
+
+class CeleryTaskTest(BaseFlaskTest):
+
+    def setUp(self):
+        super().setUp()
+        # clean FTP and TFTP directories for the test cases
+        if os.path.exists(app.config["FTP_DIRECTORY"]):
+            shutil.rmtree(os.path.join(app.config["FTP_DIRECTORY"]))
+            os.makedirs(app.config["FTP_DIRECTORY"])
+
+        if os.path.exists(app.config["TFTP_DIRECTORY"]):
+            shutil.rmtree(os.path.join(app.config["TFTP_DIRECTORY"]))
+            os.makedirs(app.config["TFTP_DIRECTORY"])
+
+    def _create_test_data(self):
+        # create test data
+        template_content = "!\nhostname ${hostname}\n!"
+        p = Project(name="project")
+        ct = ConfigTemplate(name="template", project=p, template_content=template_content)
+        tvs1 = TemplateValueSet(hostname="tvs1", config_template=ct)
+        tvs2 = TemplateValueSet(hostname="tvs2", config_template=ct)
+        tvs3 = TemplateValueSet(hostname="tvs3", config_template=ct)
+        tvs4 = TemplateValueSet(hostname="tvs4", config_template=ct)
+        db.session.add_all([p, ct, tvs1, tvs2, tvs3, tvs4])
+        db.session.commit()
+
+    def _required_services_running(self):
+        # verify celery worker state and redis state
+        response = self.client.get(url_for("appliance_status_json"))
+        content = json.loads(response.data.decode("utf-8"))
+
+        self.assertTrue("redis" in content.keys())
+        self.assertTrue("celery_worker" in content.keys())
+
+        if not content["redis"]:
+            self.fail("redis not running")
+
+        if not content["celery_worker"]:
+            self.fail("celery worker not running")
+
+    def _get_task_state(self, status_url):
+        response = self.client.get(status_url)
+        return json.loads(response.data.decode("utf-8"))
+
+    def test_update_local_ftp_config_task(self):
+        """
+        update ajax call to schedule the update of the configurations on the local FTP directory
+        :return:
+        """
+        self._create_test_data()
+        self._required_services_running()
+        ct = ConfigTemplate.query.filter(ConfigTemplate.name == "template").first()
+
+        response = self.client.post(
+            url_for("update_local_ftp_config_task", config_template_id=ct.id)
+        )
+
+        # check task status (should be PENDING)
+        status_url = response.headers["Location"]
+        task_result = self._get_task_state(status_url)
+
+        self.assertEqual(task_result["state"], "PENDING")
+        self.assertEqual(task_result["status"], "Pending...")
+
+        # wait two second (should be enough)
+        time.sleep(2)
+
+        # check task status again, now it should finished with a SUCCESS state
+        task_result = self._get_task_state(status_url)
+
+        self.assertNotEqual(task_result["state"], "PENDING")
+        self.assertEqual(task_result["state"], "SUCCESS")
+        self.assertEqual(task_result["status"], "")
+        self.assertTrue("data" in task_result.keys())
+        self.assertTrue("timestamp" in task_result["data"].keys())
+        self.assertTrue("error" not in task_result.keys())
+
+        # verify result on disk
+        base_path = os.path.join(app.config["FTP_DIRECTORY"], slugify(ct.project.name), slugify(ct.name))
+        self.assertTrue(os.path.exists(base_path), base_path)
+        self.assertTrue(os.path.isdir(base_path), base_path)
+        for tvs in ct.template_value_sets:
+            exp_file = tvs.hostname + "_config.txt"
+            self.assertTrue(os.path.exists(os.path.join(base_path, exp_file)))
+            self.assertTrue(os.path.isfile(os.path.join(base_path, exp_file)))
+
+        # cleanup
+        shutil.rmtree(os.path.join(app.config["FTP_DIRECTORY"], slugify(ct.project.name)))
+
+    def test_update_local_tftp_config_task(self):
+        """
+        update ajax call to schedule the update of the configurations on the local TFTP directory
+        :return:
+        """
+        self._create_test_data()
+        self._required_services_running()
+        ct = ConfigTemplate.query.filter(ConfigTemplate.name == "template").first()
+
+        response = self.client.post(
+            url_for("update_local_tftp_config_task", config_template_id=ct.id)
+        )
+
+        # check task status (should be PENDING)
+        status_url = response.headers["Location"]
+        task_result = self._get_task_state(status_url)
+
+        self.assertEqual(task_result["state"], "PENDING")
+        self.assertEqual(task_result["status"], "Pending...")
+
+        # wait two second (should be enough)
+        time.sleep(2)
+
+        # check task status again, now it should finished with a SUCCESS state
+        task_result = self._get_task_state(status_url)
+
+        self.assertNotEqual(task_result["state"], "PENDING")
+        self.assertEqual(task_result["state"], "SUCCESS")
+        self.assertEqual(task_result["status"], "")
+        self.assertTrue("data" in task_result.keys())
+        self.assertTrue("timestamp" in task_result["data"].keys())
+        self.assertTrue("error" not in task_result.keys())
+
+        # verify result on disk
+        base_path = os.path.join(app.config["TFTP_DIRECTORY"], slugify(ct.project.name), slugify(ct.name))
+        self.assertTrue(os.path.exists(base_path), base_path)
+        self.assertTrue(os.path.isdir(base_path), base_path)
+        for tvs in ct.template_value_sets:
+            exp_file = tvs.hostname + "_config.txt"
+            self.assertTrue(os.path.exists(os.path.join(base_path, exp_file)))
+            self.assertTrue(os.path.isfile(os.path.join(base_path, exp_file)))
+
+        # cleanup
+        shutil.rmtree(os.path.join(app.config["TFTP_DIRECTORY"], slugify(ct.project.name)))

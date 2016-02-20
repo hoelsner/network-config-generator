@@ -30,12 +30,17 @@ def verify_appliance_status():
 
     # we assume that the redis server is running locally, therefore we can use the CLI to test the connection
     rs = redis.Redis("localhost")
-    if rs.ping():
-        result["redis"] = True
+    try:
+        if rs.ping():
+            result["redis"] = True
+
+    except:
+        # ignore silently
+        result["redis"] = False
 
     # to verify the state of the celery worker threads, we look at the processes
     output = subprocess.check_output(["ps", "ax"]).decode("utf-8")
-    if "celery worker -A app.celery" in output:
+    if ("celery" in output) and ("-A app.celery" in output):
         result["celery_worker"] = True
 
     return result

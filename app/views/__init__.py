@@ -9,3 +9,4 @@ import app.views.template_value_set_views
 import app.views.template_variable
 import app.views.configuration
 import app.views.task_queue_views
+import app.views.ajax_views

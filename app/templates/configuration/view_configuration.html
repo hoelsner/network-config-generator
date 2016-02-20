@@ -20,4 +20,17 @@
 
     <pre>{{ config_result }}</pre>
 
+    <p>You can use the following <strong>Cisco IOS commands</strong> to copy the configuration from the local TFTP/FTP server:</p>
+    {% for interface_name in ip_addresses.keys() %}
+        <ul>
+            <li>on interface <strong>{{ interface_name }}</strong>:
+            {% for ip in ip_addresses[interface_name] %}
+                <ul>
+                    <li><code>copy ftp://ftpuser:{{ ftp_password }}@{{ ip }}/{{ config_template.project.name_slug }}/{{ config_template.name_slug }}/{{ template_value_set.hostname }}_config.txt</code></li>
+                    <li><code>copy tftp://{{ ip }}/{{ config_template.project.name_slug }}/{{ config_template.name_slug }}/{{ template_value_set.hostname }}_config.txt</code></li>
+                </ul>
+            {% endfor %}
+            </li>
+        </ul>
+    {% endfor %}
 {% endblock %}

@@ -8,6 +8,8 @@ import time
 from flask import render_template, make_response, send_file
 from app import app
 from app.models import ConfigTemplate, TemplateValueSet, Project
+from app.utils.appliance import get_local_ip_addresses
+from app.utils.export import get_appliance_ftp_password
 from config import ROOT_URL
 
 logger = logging.getLogger()
@@ -31,6 +33,8 @@ def view_config(config_template_id, template_value_set_id):
         "configuration/view_configuration.html",
         config_template=config_template,
         template_value_set=template_value_set,
+        ftp_password=get_appliance_ftp_password(),
+        ip_addresses=get_local_ip_addresses(),
         project=config_template.project,
         config_result=config_result
     )

@@ -15,7 +15,37 @@ from tests import BaseFlaskLiveServerTest
 
 class NetworkConfigurationGeneratorUseCaseTest(BaseFlaskLiveServerTest):
 
+    def verify_zip_archive(self, expected_file, test_tvs1_hostname, test_tvs2_hostname, test_tvs1_content):
+        """
+        helper method to verify a downloaded ZIP archive with all configurations of a given template
+        :param expected_file:
+        :param test_tvs1_hostname: hostname of the first configuration to test
+        :param test_tvs2_hostname: hostname of the second configuration to test
+        :param test_tvs1_content: file content of the first configuration
+        :return:
+        """
+        self.assertTrue(os.path.exists(expected_file))
+        self.assertTrue(os.path.isfile(expected_file))
+
+        zipfile = ZipFile(expected_file)
+        zipfile.extractall(self.download_dir)
+
+        expected_config_file = test_tvs1_hostname + "_config.txt"
+        self.assertTrue(os.path.exists(os.path.join(self.download_dir, expected_config_file)))
+        self.assertTrue(os.path.isfile(os.path.join(self.download_dir, expected_config_file)))
+
+        f = open(os.path.join(self.download_dir, expected_config_file), "r")
+        file_content = f.read()
+        self.assertEqual(test_tvs1_content, file_content)
+        f.close()
+
+        os.remove(os.path.join(self.download_dir, expected_config_file))
+        os.remove(os.path.join(self.download_dir, test_tvs2_hostname + "_config.txt"))
+
     def test_create_a_template_project_and_basic_work_with_the_config_template(self):
+        """
+        functional test case for the entire configuration generation use case
+        """
         # test data
         test_project_name = "sample project"
         test_config_template_name = "sample configuration template"
@@ -167,24 +197,49 @@ third_value ${ var_3 }
         self.browser.find_element_by_id("download_all_configurations").click()
         time.sleep(1)
         expected_file = os.path.join(self.download_dir, test_config_template_name + "_configs.zip")
-        self.assertTrue(os.path.exists(expected_file))
-        self.assertTrue(os.path.isfile(expected_file))
 
-        zipfile = ZipFile(expected_file)
-        zipfile.extractall(self.download_dir)
-
-        expected_config_file = test_tvs1_hostname + "_config.txt"
-        self.assertTrue(os.path.exists(os.path.join(self.download_dir, expected_config_file)))
-        self.assertTrue(os.path.isfile(os.path.join(self.download_dir, expected_config_file)))
-
-        f = open(os.path.join(self.download_dir, expected_config_file), "r")
-        file_content = f.read()
-        self.assertEqual(first_config_content, file_content)
-        f.close()
-
-        os.remove(os.path.join(self.download_dir, expected_config_file))
-        os.remove(os.path.join(self.download_dir, test_tvs2_hostname + "_config.txt"))
+        # verify download results
+        self.verify_zip_archive(expected_file, test_tvs1_hostname, test_tvs2_hostname, first_config_content)
         os.remove(expected_file)
+
+        # test export configurations view
+        self.browser.find_element_by_id("export_configurations").click()
+
+        # download all configs and verify file
+        self.browser.find_element_by_id("download_all_configurations").click()
+        time.sleep(1)
+        expected_file = os.path.join(self.download_dir, test_config_template_name + "_configs.zip")
+
+        # verify download results
+        self.verify_zip_archive(expected_file, test_tvs1_hostname, test_tvs2_hostname, first_config_content)
+        os.remove(expected_file)
+
+        # test provide files on local FTP server
+        self.browser.find_element_by_id("refresh_ftp").click()
+        time.sleep(5)
+        current_url = self.browser.current_url
+
+        self.browser.get(self.get_server_url() + "/ncg/debug/list_ftp_directory")
+        ftp_text = self.browser.find_element_by_tag_name("body").text
+        self.assertIn("/sample-project/sample-configuration-template", ftp_text)
+        self.assertIn("my-other-hostname", ftp_text)
+
+        self.browser.get(current_url)
+
+        # test provide files on local TFTP server
+        self.browser.find_element_by_id("refresh_tftp").click()
+        time.sleep(5)
+        current_url = self.browser.current_url
+
+        self.browser.get(self.get_server_url() + "/ncg/debug/list_tftp_directory")
+        tftp_text = self.browser.find_element_by_tag_name("body").text
+        self.assertIn("/sample-project/sample-configuration-template", tftp_text)
+        self.assertIn("my-other-hostname", tftp_text)
+
+        self.browser.get(current_url)
+
+        # go back to the config template view
+        self.browser.find_element_by_id("_back").click()
 
         # change the configuration script
         self.browser.find_element_by_id("edit_template_value_set").click()

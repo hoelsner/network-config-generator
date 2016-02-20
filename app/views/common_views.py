@@ -1,11 +1,13 @@
 """
 common views for the web service
 """
+import os
+
 from flask import redirect, render_template, jsonify, request, url_for
 from app import app
 from app.utils.appliance import verify_appliance_status, get_local_ip_addresses
+from app.utils.export import get_appliance_ftp_password
 from config import ROOT_URL
-from app.tasks import debug_celery_task
 
 
 @app.route("/")
@@ -44,7 +46,7 @@ def template_syntax():
     return render_template("template_syntax.html")
 
 
-@app.route(ROOT_URL + "appliance", methods=['GET', 'POST'])
+@app.route(ROOT_URL + "appliance")
 def appliance_status():
     """Appliance Status page (services and dependencies), provides test capability for the celery task queue
 
@@ -52,6 +54,7 @@ def appliance_status():
     """
     return render_template(
         "appliance_status.html",
+        ftp_password=get_appliance_ftp_password(),
         ip_addresses=get_local_ip_addresses()
     )
 
@@ -65,15 +68,35 @@ def appliance_status_json():
     return jsonify(verify_appliance_status())
 
 
-@app.route(ROOT_URL + "debug/calculate_task", methods=['POST'])
-def debug_calculate_task():
+@app.route(ROOT_URL + "debug/list_ftp_directory")
+def list_ftp_directory():
     """
-    Ajax view that create a simple calculation job
+    debug view to create a tree structure of the FTP directory
     :return:
     """
-    a = request.form.get('a', type=int)
-    b = request.form.get('b', type=int)
+    directoy_list_html = ""
 
-    task = debug_celery_task.delay(a, b)
+    for root, dirs, files in os.walk(app.config["FTP_DIRECTORY"]):
+        directoy_list_html += "<p>%s</p>\n<ul>\n" % root[len(app.config["FTP_DIRECTORY"]):]
+        for file in files:
+            directoy_list_html += "<li>%s</li>\n" % file
+        directoy_list_html += "</ul>\n"
 
-    return jsonify({}), 202, {'Location': url_for('task_status_json', task_id=task.id)}
+    return "<html><body>%s</body></html>" % directoy_list_html
+
+
+@app.route(ROOT_URL + "debug/list_tftp_directory")
+def list_tftp_directory():
+    """
+    debug view to create a tree structure of the TFTP directory
+    :return:
+    """
+    directoy_list_html = ""
+
+    for root, dirs, files in os.walk(app.config["TFTP_DIRECTORY"]):
+        directoy_list_html += "<p>%s</p>\n<ul>\n" % root[len(app.config["TFTP_DIRECTORY"]):]
+        for file in files:
+            directoy_list_html += "<li>%s</li>\n" % file
+        directoy_list_html += "</ul>\n"
+
+    return "<html><body>%s</body></html>" % directoy_list_html

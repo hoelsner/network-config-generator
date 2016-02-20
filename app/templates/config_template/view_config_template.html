@@ -19,6 +19,11 @@
                 <span class="uk-icon-close"></span> delete
             </a>
         </li>
+        <li>
+            <a href="{{ url_for("export_configurations", project_id=project.id, config_template_id=config_template.id) }}" id="export_configurations">
+                <span class="uk-icon-send"></span> export configurations
+            </a>
+        </li>
     </ul>
 
     <h2><span class="uk-icon-cube"></span> Variables</h2>
@@ -110,6 +115,9 @@
             </a> |
             <a href="{{ url_for("download_all_config_as_zip", project_id=project.id, config_template_id=config_template.id) }}" id="download_all_configurations">
                 <span class="uk-icon-download"></span> download all configurations (ZIP-archive)
+            </a> |
+            <a href="{{ url_for("export_configurations", project_id=project.id, config_template_id=config_template.id) }}" id="export_configurations">
+                <span class="uk-icon-send"></span> export configurations (TFTP/FTP)
             </a>
         </p>
     {% endif %}
