@@ -1,0 +1,18 @@
+[Unit]
+Description=celery worker for the Network Config Generator
+After=network.target
+After=redis-service.service
+
+[Service]
+Type=forking
+User=ncg
+Group=ncg
+WorkingDirectory=/var/www/network_config_generator
+Environment="APP_SETTINGS=config.ProductionConfig"
+Environment="APP_SECRET_KEY=SECRET_KEY_CONTENT"
+ExecStart=/var/www/network_config_generator/venv/bin/celery multi start 1 -A app.celery --loglevel=info --logfile=log/celery_worker.log --pidfile=celery_%n.pid
+ExecStop=/var/www/network_config_generator/venv/bin/celery multi stopwait 1 -A app.celery --loglevel=info --logfile=log/celery_worker.log --pidfile=celery_%n.pid
+ExecReload=/var/www/network_config_generator/venv/bin/celery multi restart 1 -A app.celery --loglevel=info --logfile=log/celery_worker.log --pidfile=celery_%n.pid
+
+[Install]
+WantedBy=multi-user.target

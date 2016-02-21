@@ -1,16 +1,12 @@
 ---
 # This playbook install and configures a TFTP and FTP server for the Network Configuration Generator on the server
-- hosts: localhost
-  gather_facts: False
-  sudo: yes
-
-  tasks:
-  - name: install atftp server and client (for testing)
+  - name: install atftp server and client
     apt: pkg={{ item }} state=installed
     with_items:
      - atftpd
      - atftp
      - vsftpd
+     - shellinabox
   - name: create tftp root directory
     sudo: true
     file:
@@ -27,9 +23,11 @@
   - name: stop inetutils
     sudo: true
     shell: /etc/init.d/inetutils-inetd stop
+    ignore_errors: true
   - name: verify that inetd is not used with atftpd
     sudo: true
     lineinfile: dest=/etc/default/atftpd regexp='USE_INETD=true' line='USE_INETD=false'
+    ignore_errors: true
   - name: generate key file for the FTP user
     shell: venv/bin/python3 deploy/scripts/create_key_file.py ftp_user.key 6
     sudo_user: ncg
@@ -54,6 +52,7 @@
   - name: start inetutils
     sudo: true
     shell: /etc/init.d/inetutils-inetd start
+    ignore_errors: true
   - name: start aftpd service
     service: name=atftpd state=restarted enabled=yes
     sudo: true

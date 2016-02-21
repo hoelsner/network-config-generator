@@ -28,6 +28,15 @@ def home():
     return render_template("home.html")
 
 
+@app.route(ROOT_URL + "shell")
+def shell():
+    """embedded shell in a box view
+
+    :return:
+    """
+    return render_template("shell.html")
+
+
 @app.route(ROOT_URL + "how_to_use")
 def how_to_use():
     """How to use page

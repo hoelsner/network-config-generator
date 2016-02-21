@@ -36,7 +36,7 @@
         <nav class="uk-navbar" data-uk-sticky="{top:10}">
             <a class="uk-navbar-brand uk-hidden-small" href="{{ url_for("home") }}"><span class="uk-icon-cogs"></span> Network Configuration Generator</a>
             <a href="#sidebar" class="uk-navbar-toggle uk-visible-small" data-uk-offcanvas></a>
-            <div class="uk-navbar-brand uk-navbar-center uk-visible-small">Network Configuration Generator</div>
+            <div class="uk-navbar-brand uk-navbar-center uk-visible-small">NCG</div>
             <div class="uk-navbar-flip">
                 <ul class="uk-navbar-nav uk-hidden-small">
                      <li class="">
@@ -55,6 +55,12 @@
                     <li class=""><a href="{{ url_for("home") }}"><span class="uk-icon-home"></span> Homepage</a></li>
                     <li class="uk-nav-divider"></li>
                     <li class=""><a href="{{ url_for("view_all_projects") }}"><span class="uk-icon-folder"></span> View all Projects</a></li>
+                    <li class="uk-nav-divider"></li>
+                    <li class="">
+                        <a href="{{ url_for("appliance_status") }}">
+                            <span class="uk-icon-dashboard"></span> Appliance Status
+                        </a>
+                    </li>
                     <li class="uk-nav-divider"></li>
                     <li class="">
                         <a href="{{ url_for("how_to_use") }}">

@@ -49,7 +49,6 @@ class TestConfig(DefaultConfig):
     """
     configuration for unit tests
     """
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(APP_BASE_DIR, 'app_test.db')
     TESTING = True
 
 
@@ -57,6 +56,5 @@ class LiveServerTestConfig(DefaultConfig):
     """
     configuration for Live Server tests
     """
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(APP_BASE_DIR, 'app_test.db')
     LIVESERVER_PORT = 11111
     TESTING = True

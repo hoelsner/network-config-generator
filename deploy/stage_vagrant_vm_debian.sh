@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 echo ""
-echo "VAGRANT UBUNTU SETUP"
+echo "VAGRANT DEBIAN SETUP"
 echo ""
 echo "install Ansible on the VM"
-sudo apt-add-repository ppa:ansible/ansible -y
 sudo apt-get update
-sudo apt-get install ansible -y
+# install dependencies that are not part of the vagrant debian box
+sudo apt-get install python-pip python-dev -y
+sudo pip install ansible
+sudo pip install markupsafe
+sudo pip install ecdsa
 
 echo "create Network Configuration Generator user..."
 sudo adduser ncg --home /home/ncg --disabled-password
@@ -32,4 +35,4 @@ fi
 echo "stage the Network Configuration Generator Web service..."
 cd ${source_dir}
 
-ansible-playbook -i 'localhost,' -c local deploy/setup.yaml --extra-vars "configure_local_services=true"
+ansible-playbook -i 'localhost,' -c local deploy/setup.yaml --extra-vars "configure_local_services=true use_systemd=true"

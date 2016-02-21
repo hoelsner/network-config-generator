@@ -4,6 +4,9 @@
   gather_facts: False
   sudo: yes
 
+  # local services are only configured, if a variable "configure_local_services" is defined
+  # by default, the services are setup as upstart scripts, to use systemd define the variable "use_systemd"
+
   tasks:
   # install package dependencies
   - name: update apt cache
@@ -19,6 +22,7 @@
     - python-virtualenv
     - nginx
     - redis-server
+    - shellinabox
 
   # setup python environment for site
   - name: create virtualenv
@@ -45,32 +49,50 @@
     copy:
       src=templates/gunicorn.template.conf
       dest=/etc/init/gunicorn-network_config_generator.conf
+    when: use_systemd is undefined
   - name: set secret key on gunicorn configuration
     replace:
       dest=/etc/init/gunicorn-network_config_generator.conf
       regexp='SECRET_KEY_CONTENT'
       replace='{{ lookup('file', '/var/www/network_config_generator/network_config_generator.key') }}'
+    when: use_systemd is undefined
 
-  #- name: create gunicorn service (systemd)
-  #  copy:
-  #    src=templates/gunicorn.template.service
-  #    dest=/etc/systemd/system/gunicorn-network_config_generator.service
-  #- name: set secret key on gunicorn configuration
-  #  replace:
-  #    dest=/etc/systemd/system/gunicorn-network_config_generator.service
-  #    regexp='SECRET_KEY_CONTENT'
-  #    replace='{{ lookup('file', '/var/www/network_config_generator/network_config_generator.key') }}'
+  - name: create gunicorn service (systemd)
+    copy:
+      src=templates/gunicorn.template.service
+      dest=/etc/systemd/system/gunicorn-network_config_generator.service
+    when: use_systemd is defined
+  - name: set secret key on gunicorn configuration (systemd)
+    replace:
+      dest=/etc/systemd/system/gunicorn-network_config_generator.service
+      regexp='SECRET_KEY_CONTENT'
+      replace='{{ lookup('file', '/var/www/network_config_generator/network_config_generator.key') }}'
+    when: use_systemd is defined
 
   # configure celery worker
   - name: create celery_worker service
     copy:
       src=templates/celery_worker.template.conf
       dest=/etc/init/worker-network_config_generator.conf
+    when: use_systemd is undefined
   - name: set secret key on celery_worker configuration
     replace:
       dest=/etc/init/worker-network_config_generator.conf
       regexp='SECRET_KEY_CONTENT'
       replace='{{ lookup('file', '/var/www/network_config_generator/network_config_generator.key') }}'
+    when: use_systemd is undefined
+
+  - name: create celery_worker service (systemd)
+    copy:
+      src=templates/celery_worker.template.service
+      dest=/etc/systemd/system/worker-network_config_generator.service
+    when: use_systemd is defined
+  - name: set secret key on celery_worker configuration
+    replace:
+      dest=/etc/systemd/system/worker-network_config_generator.service
+      regexp='SECRET_KEY_CONTENT'
+      replace='{{ lookup('file', '/var/www/network_config_generator/network_config_generator.key') }}'
+    when: use_systemd is defined
 
   # configure nginx site
   - name: delete nginx default configuration
@@ -81,19 +103,38 @@
     copy:
       src=templates/nginx.template.conf
       dest=/etc/nginx/sites-available/network_config_generator
+      force=yes
   - name: enable site in nginx
     file:
       src=/etc/nginx/sites-available/network_config_generator
       dest=/etc/nginx/sites-enabled/network_config_generator
       state=link
 
+  # configure shellinabox
+  - name: copy shellinabox configuration
+    copy:
+      src=templates/shellinabox.template.conf
+      dest=/etc/default/shellinabox
+      force=yes
+
   # update database
+  - name: create srv root directory
+    sudo: true
+    file:
+      path=/srv
+      state=directory
+      mode=0777
+      owner=ncg
+      group=ncg
   - name: update database schema
     shell: deploy/scripts/update_database.sh
     args:
       chdir: /var/www/network_config_generator/
 
   # restart services
+  - name: execute systemctl daemon-reload
+    shell: systemctl daemon-reload
+    when: use_systemd is defined
   - name: restart nginx service
     service: name=nginx state=restarted enabled=yes
     sudo: true
@@ -103,3 +144,10 @@
   - name: restart celery worker service
     service: name=worker-network_config_generator state=restarted enabled=yes
     sudo: true
+  - name: restart shellinabox service
+    service: name=shellinabox state=restarted enabled=yes
+    sudo: true
+
+  # configure local services like FTP and TFTP
+  - include: setup_local_services.yaml
+    when: configure_local_services is defined

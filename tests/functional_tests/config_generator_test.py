@@ -179,7 +179,7 @@ third_value ${ var_3 }
         self.browser.find_element_by_id("download_config_1").click()
 
         # wait for download complete
-        time.sleep(1)
+        time.sleep(2)
 
         # verify downloaded file
         expected_file = os.path.join(self.download_dir, test_tvs1_hostname + "_config.txt")
