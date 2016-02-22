@@ -9,6 +9,22 @@
         It's like a “next generation” mass mailing function for configuration files.
     </p>
 
+    <h2><span class="uk-icon-dashboard"></span> Verify the overall status of the appliance</h2>
+
+    <p>
+        To verify the overall status of the appliance, please take a look at the <strong>Appliance Status</strong> page.
+        It should look similar to the following screenshot.
+    </p>
+
+    <div class="uk-alert uk-alert-warning">
+        <strong>Please note:</strong> If the redis server or the local celery worker is not available, the export functions will not work.
+        Furthermore, this view works only correct, if the web service is deployed using one of the setup scripts.
+    </div>
+
+    <p style="text-align: center">
+        <img style="border: solid 1px" src="{{ url_for("static", filename="images/how_to/appliance_status.png") }}" alt="" width="700">
+    </p>
+
     <h2><span class="uk-icon-folder"></span> 1. Create a new Project</h2>
 
     <p>
@@ -93,6 +109,25 @@
 
     <p style="text-align: center">
         <img style="border: solid 1px" src="{{ url_for("static", filename="images/how_to/view_configuration.png") }}" alt="" width="700">
+    </p>
+
+    <h2><span class="uk-icon-file"></span> 5. Export the configurations to the local FTP/TFTP server</h2>
+
+    <p>
+        If this application is deployed using the integrated setup scripts, a FTP and TFTP server is configured by default. To export the configurations
+        to the directories of this servers, simply go to "export configurations" in the Config Template view.
+    </p>
+
+    <div class="uk-alert uk-alert-warning">
+        <strong>Please note:</strong> The password for the <code>ftpuser</code> is generated dynamically during the setup.
+    </div>
+
+    <p style="text-align: center">
+        <img style="border: solid 1px" src="{{ url_for("static", filename="images/how_to/export_configuration_template.png") }}" alt="" width="700">
+    </p>
+
+    <p>
+        The sync with the local directories is always on-demand and can be triggered using the "refresh config" button.
     </p>
 
 {% endblock %}

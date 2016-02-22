@@ -23,7 +23,7 @@ do
             echo "---------------------------------"
             echo "Install Ansible and other dependencies..."
             echo "---------------------------------"
-            sudo apt-get install python-dev python3-dev
+            sudo apt-get install python-dev python3-dev -y
             sudo apt-get update
             sudo pip install ansible markupsafe
 
