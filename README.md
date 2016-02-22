@@ -62,7 +62,7 @@ also setup the FTP and TFTP service on the server.
 
 ### on a Raspberry PI
 
-During the development, I wrote a post about the [use of a Raspberry PI as a Provisioning Appliance](). At this point, I 
+During the development, I wrote a post about the [use of a Raspberry PI as a Provisioning Appliance](https://codingnetworker.com/2016/02/using-a-raspberry-pi-as-a-configuration-generator/). At this point, I 
 include a FTP and TFTP server to provide the configurations to the outside world. Furthermore, I add the Shell in a Box 
 service and the Appliance Status view.
 
