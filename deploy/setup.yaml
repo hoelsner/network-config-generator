@@ -33,8 +33,7 @@
   - name: install python3 dependencies
     pip:
       requirements=/var/www/network_config_generator/requirements.txt
-      virtualenv=/var/www/network_config_generator/venv
-      executable=pip3
+      executable=/var/www/network_config_generator/venv/bin/pip3
 
   # create key file if not exists
   - name: generate key file for CSRF protection
