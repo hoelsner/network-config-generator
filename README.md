@@ -6,8 +6,6 @@ This Web application is a simple configuration generator for network equipment l
 It is based on python3 and the [Flask microframework](http://flask.pocoo.org). If you like to know more about the Use 
 Case and development of this Web service, take a look on the associated blog series 
 "[How to build your own configuration generator](https://codingnetworker.com/2015/12/network-configuration-generator/)". 
- 
-**This web service is currently in development.**
 
 The following images shows an example configuration template and the associated variable definition.
 
