@@ -4,7 +4,6 @@ export utility functions
 import logging
 import os
 
-from slugify import slugify
 from app.models import TemplateValueSet
 from app import app
 

@@ -396,16 +396,16 @@ class ConfigTemplateDataModelTest(BaseFlaskTest):
         db.session.add_all([p, ct])
 
         ct.update_template_variable("First Test")
-        self.assertTrue(ct.is_variable_defined("first_test"))
+        self.assertTrue(ct.is_variable_defined("First_Test"))
 
         ct.update_template_variable("first_test")
         self.assertTrue(len(ConfigTemplate.query.all()) == 1)
         self.assertTrue(ct.is_variable_defined("first_test"))
 
         variable_map = (
-            ("Value ", "value"),
+            ("Value ", "Value"),
             ("the variable name", "the_variable_name"),
-            ("%&/__ASDF ", "asdf"),
+            ("%&/__ASDF ", "ASDF"),
         )
 
         for string, expected_result in variable_map:
@@ -759,16 +759,16 @@ class TemplateValueSetDataModelTest(BaseFlaskTest):
         db.session.add_all([p, ct, tvs])
 
         tvs.update_variable_value("First Test")
-        self.assertTrue(tvs.is_value_defined("first_test"))
+        self.assertTrue(tvs.is_value_defined("First_Test"))
 
         tvs.update_variable_value("first_test")
         self.assertTrue(len(TemplateValueSet.query.all()) == 1)
         self.assertTrue(tvs.is_value_defined("first_test"))
 
         variable_map = (
-            ("Value ", "value"),
+            ("Value ", "Value"),
             ("the variable name", "the_variable_name"),
-            ("%&/__ASDF ", "asdf"),
+            ("%&/__ASDF ", "ASDF"),
         )
 
         for string, expected_result in variable_map:

@@ -7,7 +7,7 @@ import shutil
 
 import time
 from flask import url_for
-from slugify import slugify
+from slugify.main import Slugify
 
 from app import db, app
 from app.models import Project, ConfigTemplate, TemplateValueSet, TemplateVariable
@@ -1602,7 +1602,10 @@ class CeleryTaskTest(BaseFlaskTest):
         self.assertTrue("error" not in task_result.keys())
 
         # verify result on disk
-        base_path = os.path.join(app.config["FTP_DIRECTORY"], slugify(ct.project.name), slugify(ct.name))
+        base_path = os.path.join(app.config["FTP_DIRECTORY"],
+                                 Slugify(separator="_", to_lower=False)(ct.project.name),
+                                 Slugify(separator="_", to_lower=False)(ct.name))
+
         self.assertTrue(os.path.exists(base_path), base_path)
         self.assertTrue(os.path.isdir(base_path), base_path)
         for tvs in ct.template_value_sets:
@@ -1611,7 +1614,7 @@ class CeleryTaskTest(BaseFlaskTest):
             self.assertTrue(os.path.isfile(os.path.join(base_path, exp_file)))
 
         # cleanup
-        shutil.rmtree(os.path.join(app.config["FTP_DIRECTORY"], slugify(ct.project.name)))
+        shutil.rmtree(os.path.join(app.config["FTP_DIRECTORY"], Slugify(to_lower=False, separator="_")(ct.project.name)))
 
     def test_update_local_tftp_config_task(self):
         """
@@ -1647,7 +1650,9 @@ class CeleryTaskTest(BaseFlaskTest):
         self.assertTrue("error" not in task_result.keys())
 
         # verify result on disk
-        base_path = os.path.join(app.config["TFTP_DIRECTORY"], slugify(ct.project.name), slugify(ct.name))
+        base_path = os.path.join(app.config["TFTP_DIRECTORY"],
+                                 Slugify(separator="_", safe_chars="-", to_lower=False)(ct.project.name),
+                                 Slugify(separator="_", safe_chars="-", to_lower=False)(ct.name))
         self.assertTrue(os.path.exists(base_path), base_path)
         self.assertTrue(os.path.isdir(base_path), base_path)
         for tvs in ct.template_value_sets:
@@ -1656,4 +1661,5 @@ class CeleryTaskTest(BaseFlaskTest):
             self.assertTrue(os.path.isfile(os.path.join(base_path, exp_file)))
 
         # cleanup
-        shutil.rmtree(os.path.join(app.config["TFTP_DIRECTORY"], slugify(ct.project.name)))
+        shutil.rmtree(os.path.join(app.config["TFTP_DIRECTORY"],
+                                   Slugify(separator="_", to_lower=False)(ct.project.name)))

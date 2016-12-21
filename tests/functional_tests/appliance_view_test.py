@@ -22,14 +22,14 @@ class ApplianceViewTest(BaseFlaskLiveServerTest):
         self.browser.find_element_by_link_text("Appliance Status").click()
 
         # wait some time
-        time.sleep(30)
+        time.sleep(60)
 
         # verify that the redis server is started (check the ajax results)
         expected_html = '<span class="uk-icon-thumbs-up" id="redis_state" style="color: green;"></span>'
         content = self.browser.page_source
         self.assertIn(expected_html, content)
 
-        # verfiy thet the local celery worker is started
+        # verify that the local celery worker is started
         expected_html = '<span class="uk-icon-thumbs-up" id="celery_worker_state" style="color: green;"></span>'
         self.assertIn(expected_html, content)
 
