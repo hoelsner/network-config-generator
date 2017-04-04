@@ -40,7 +40,7 @@ do
             do
                 case ${sub_result} in
                     "Yes" )
-                        extra_vars+="configure_local_services=true"
+                        extra_vars+=" configure_local_services=true"
                         break
                         ;;
                     *)
