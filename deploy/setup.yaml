@@ -14,7 +14,7 @@
   - name: install packages
     apt: pkg={{ item }} state=installed
     with_items:
-    - python3.4
+    - python3.5
     - python3-pip
     - build-essential
     - python-dev
@@ -26,7 +26,7 @@
 
   # setup python environment for site
   - name: create virtualenv
-    command: virtualenv /var/www/network_config_generator/venv -p python3.4
+    command: virtualenv /var/www/network_config_generator/venv -p python3.5
     sudo_user: ncg
     args:
       creates: /var/www/network_config_generator/venv/bin/python3
