@@ -17,7 +17,7 @@ The following images shows an example configuration template and the associated 
 
 There are multiple ways to run this Web service:
  
-  * on a Linux server (tested with Ubuntu 14.04)
+  * on a Linux server (recommended is Ubuntu 16.04)
   * as a Vagrant VM (see Vagrantfile)
   * on Raspberry PI (tested with raspbian/jessie)
   
@@ -34,7 +34,7 @@ If the `APP_SETTINGS` variable is not set, the `DefaultConfig` is used. Furtherm
 to define a key value for the CSRF protection. Within a production environment, this key is dynamically created within 
 the setup script.
 
-### on Ubuntu Linux (14.04)
+### on Ubuntu Linux (16.04)
 
 To setup the Web service on a Ubuntu machine, use the following commands:
 
@@ -55,7 +55,7 @@ $ cd network_config_generator
 $ vagrant up
 ```
 
-The setup script that is used in this case works totally unattended and will create a VM based on Ubuntu 14.04. It will 
+The setup script that is used in this case works totally unattended and will create a VM based on Ubuntu 16.04. It will 
 also setup the FTP and TFTP service on the server.
 
 ### on a Raspberry PI
