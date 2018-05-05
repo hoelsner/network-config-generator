@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 Vagrant.configure(2) do |config|
   config.vm.define "ncg", primary: true do |ncg|
-    ncg.vm.box = "ubuntu/trusty64"
+    ncg.vm.box = "ubuntu/xenial64"
     ncg.vm.hostname = "network-config-generator"
 
     ncg.vm.network "public_network"
@@ -12,7 +12,7 @@ Vagrant.configure(2) do |config|
       vb.memory = "1024"
     end
 
-    ncg.vm.provision "shell", path: "deploy/stage_vagrant_vm.sh"
+    ncg.vm.provision "shell", path: "deploy/stage_vagrant_vm_debian.sh"
     ncg.vm.post_up_message = "The Network Configuration Generator is available at 'http://localhost:10000'"
   end
   config.vm.define "ncg_debian", primary: true do |ncg_debian|
